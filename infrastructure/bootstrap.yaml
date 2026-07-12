@@ -84,6 +84,9 @@ Resources:
                 Condition:
                   StringEquals:
                     iam:PassedToService: lambda.amazonaws.com
+              - Effect: Allow
+                Action: cloudformation:CreateChangeSet
+                Resource: !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31'
 
   ArtifactBucket:
     Type: AWS::S3::Bucket
