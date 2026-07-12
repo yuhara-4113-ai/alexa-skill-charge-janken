@@ -55,11 +55,6 @@ Resources:
       Environment:
         Variables:
           ALEXA_SKILL_ID: !Ref AlexaSkillId
-      Events:
-        AlexaSkill:
-          Type: AlexaSkill
-          Properties:
-            SkillId: !Ref AlexaSkillId
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -67,6 +62,14 @@ Resources:
           - src/index.ts
         Target: es2022
         Minify: false
+
+  AlexaSkillInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      EventSourceToken: !Ref AlexaSkillId
+      FunctionName: !GetAtt SkillFunction.Arn
+      Principal: alexa-appkit.amazon.com
 
 Outputs:
   SkillFunctionArn:

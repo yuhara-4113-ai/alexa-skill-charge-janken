@@ -282,11 +282,13 @@ ASK CLIの生成物である `.ask/`、デプロイ用一時パッケージの `
 Alexaからの呼び出し権限はSkill IDで限定します。
 
 ```yaml
-Events:
-  AlexaSkill:
-    Type: AlexaSkill
-    Properties:
-      SkillId: !Ref AlexaSkillId
+AlexaSkillInvokePermission:
+  Type: AWS::Lambda::Permission
+  Properties:
+    Action: lambda:InvokeFunction
+    EventSourceToken: !Ref AlexaSkillId
+    FunctionName: !GetAtt SkillFunction.Arn
+    Principal: alexa-appkit.amazon.com
 ```
 
 `skill-package/skill.json` のendpoint ARNは、SAMデプロイ後にCloudFormation Outputから取得します。リポジトリへAWSアカウント固有のARNを直接埋め込まず、`prepare-skill-package.mjs` で `.build/skill-package/` へコピーして安全に反映してください。`ask-resources.json` の `skillMetadata.src` は、この生成先だけを指すようにします。
@@ -521,7 +523,7 @@ Workflowの `permissions` は `contents: read` のみとします。
 - [Invocation name requirements](https://developer.amazon.com/ja-JP/docs/alexa/custom-skills/choose-the-invocation-name-for-a-custom-skill.html)
 - [Host a custom skill on Lambda](https://developer.amazon.com/en-US/docs/alexa/custom-skills/host-a-custom-skill-as-an-aws-lambda-function.html)
 - [Alexa request and response reference](https://developer.amazon.com/en-US/docs/alexa/custom-skills/request-and-response-json-reference.html)
-- [SAM AlexaSkill event](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-alexaskill.html)
+- [Configure the Alexa Skills Kit Lambda trigger](https://developer.amazon.com/en-US/docs/alexa/custom-skills/host-a-custom-skill-as-an-aws-lambda-function.html#configure-the-trigger-for-a-lambda-function)
 - [Lambda Node.js runtimes](https://docs.aws.amazon.com/lambda/latest/dg/lambda-nodejs.html)
 - [AWS IAM OIDC federation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_oidc.html)
 - [AWS IAM role for GitHub OIDC](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-idp_oidc.html#idp-github)
