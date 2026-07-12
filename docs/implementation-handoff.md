@@ -24,7 +24,7 @@
 | 仮の表示名・起動名 | `チャージじゃんけん` |
 | スキル種別 | Custom / Provision your own backend resources |
 | 対応ロケール | `ja-JP` のみ |
-| Alexa endpoint region | `FE` |
+| Alexa endpoint region | Default Region |
 | AWSリージョン | `us-west-2` |
 | バックエンド | AWS Lambda + TypeScript + ASK SDK v2 |
 | Lambda runtime | `nodejs24.x` |
@@ -34,7 +34,7 @@
 | Alexa認証 | ASK CLIのrefresh token |
 | MVPデプロイ先 | Alexa development stage + 開発Lambda |
 
-`us-west-2` はAlexa公式がFE向けに案内している推奨リージョンです。東京リージョンも利用できますが、このMVPは他のAWSリソースと連携しないため、まず公式推奨を採用します。
+MVPでは必須のDefault RegionだけにLambda ARNを設定します。地域別エンドポイントは、複数リージョンへLambdaを展開する段階で追加します。
 
 ## 2. システムと責任境界
 

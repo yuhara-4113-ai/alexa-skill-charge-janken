@@ -22,13 +22,6 @@
       "custom": {
         "endpoint": {
           "uri": "{{LAMBDA_ARN}}"
-        },
-        "regions": {
-          "FE": {
-            "endpoint": {
-              "uri": "{{LAMBDA_ARN}}"
-            }
-          }
         }
       }
     }
