@@ -42,7 +42,7 @@ Resources:
 
   SkillFunction:
     Type: AWS::Serverless::Function
-    DeletionPolicy: Retain
+    DeletionPolicy: RetainExceptOnCreate
     UpdateReplacePolicy: Retain
     Properties:
       FunctionName: !Sub '${AWS::StackName}-handler'

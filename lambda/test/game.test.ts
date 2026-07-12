@@ -67,5 +67,11 @@ describe('session state', () => {
   it('rejects malformed and action-phase sessions without a pending hand', () => {
     expect(isGameSession({ phase: 'AWAITING_ACTION', playerPower: 0 })).toBe(false);
     expect(isGameSession({ ...initialSession(), playerPower: -1 })).toBe(false);
+    expect(isGameSession({ ...initialSession(), pendingAlexaAction: 'charge' })).toBe(false);
+    expect(isGameSession({
+      ...initialSession(),
+      phase: 'AWAITING_ACTION',
+      pendingAlexaAction: 'attack',
+    })).toBe(false);
   });
 });

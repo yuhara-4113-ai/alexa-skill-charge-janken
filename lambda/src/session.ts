@@ -57,8 +57,9 @@ export function isGameSession(value: unknown): value is GameSession {
     return false;
   }
 
-  if (session.pendingAlexaAction !== undefined && !isAction(session.pendingAlexaAction)) return false;
-  return session.phase !== 'AWAITING_ACTION' || isAction(session.pendingAlexaAction);
+  if (session.phase !== 'AWAITING_ACTION') return session.pendingAlexaAction === undefined;
+  if (!isAction(session.pendingAlexaAction)) return false;
+  return session.pendingAlexaAction !== 'attack' || session.alexaPower >= 1;
 }
 
 export function readSession(attributes: unknown): GameSession {
