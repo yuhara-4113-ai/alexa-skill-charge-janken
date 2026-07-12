@@ -12,7 +12,7 @@
 1. IaCはAWS SAMに固定し、CDKとの選択を実装担当へ残さない。
 2. GitHub ActionsからAWSへの認証には、長期アクセスキーではなくGitHub OIDCと一時認証情報を使う。
 3. SAMをLambda・IAM・CloudWatch Logsの唯一の管理者にする。
-4. ASK CLIは `ask deploy --target skill-metadata` だけを使い、Alexaのマニフェストと対話モデルだけを更新する。
+4. ASK CLIは低レベルSMAPIコマンドを使い、Alexaのマニフェストと対話モデルだけを個別に更新する。
 5. Skill IDだけではASK CLIを認証できないため、Amazon Developer用のrefresh tokenも準備する。
 6. `main` へのマージ先は、公開前のdevelopment環境とする。Alexa Storeのlive環境への公開は自動化しない。
 7. Alexaは応答を話し終えた後にマイクを開くため、厳密な同時タイミングゲームではなく、Alexaの手を先に隠して確定するターン制ゲームとして実装する。
@@ -24,7 +24,7 @@
 | 仮の表示名・起動名 | `チャージじゃんけん` |
 | スキル種別 | Custom / Provision your own backend resources |
 | 対応ロケール | `ja-JP` のみ |
-| Alexa endpoint region | `FE` |
+| Alexa endpoint region | Default Region |
 | AWSリージョン | `us-west-2` |
 | バックエンド | AWS Lambda + TypeScript + ASK SDK v2 |
 | Lambda runtime | `nodejs24.x` |
@@ -34,7 +34,7 @@
 | Alexa認証 | ASK CLIのrefresh token |
 | MVPデプロイ先 | Alexa development stage + 開発Lambda |
 
-`us-west-2` はAlexa公式がFE向けに案内している推奨リージョンです。東京リージョンも利用できますが、このMVPは他のAWSリソースと連携しないため、まず公式推奨を採用します。
+MVPでは必須のDefault RegionだけにLambda ARNを設定します。地域別エンドポイントは、複数リージョンへLambdaを展開する段階で追加します。
 
 ## 2. システムと責任境界
 
@@ -46,7 +46,7 @@ flowchart LR
     GH --> AlexaJob["deploy-alexa job"]
     AWSJob -->|OIDCの一時認証情報| SAM["AWS SAM / CloudFormation"]
     SAM --> Lambda["AWS Lambda"]
-    AlexaJob -->|ASK refresh token| ASK["ASK CLI<br/>skill-metadataのみ"]
+    AlexaJob -->|ASK refresh token| ASK["ASK CLI<br/>manifest / modelのみ"]
     ASK --> Alexa["Alexa development stage"]
     Alexa -->|Skill IDで制限| Lambda
 ```
@@ -60,7 +60,7 @@ flowchart LR
 | AWSへのデプロイ権限 | GitHub OIDC Pipeline Role |
 | Alexa Developerへのデプロイ権限 | `ASK_REFRESH_TOKEN` |
 
-通常の `ask deploy` は構成次第でLambdaやCloudFormationも更新するため使用禁止です。必ず `--target skill-metadata` を付けます。
+高レベルの `ask deploy` はスキルパッケージ全体をインポートし、構成次第ではLambdaやCloudFormationも更新します。このリポジトリでは使用せず、`update-skill-manifest` と `set-interaction-model` だけを使います。
 
 ## 3. MVPのゲーム仕様
 
@@ -282,11 +282,13 @@ ASK CLIの生成物である `.ask/`、デプロイ用一時パッケージの `
 Alexaからの呼び出し権限はSkill IDで限定します。
 
 ```yaml
-Events:
-  AlexaSkill:
-    Type: AlexaSkill
-    Properties:
-      SkillId: !Ref AlexaSkillId
+AlexaSkillInvokePermission:
+  Type: AWS::Lambda::Permission
+  Properties:
+    Action: lambda:InvokeFunction
+    EventSourceToken: !Ref AlexaSkillId
+    FunctionName: !GetAtt SkillFunction.Arn
+    Principal: alexa-appkit.amazon.com
 ```
 
 `skill-package/skill.json` のendpoint ARNは、SAMデプロイ後にCloudFormation Outputから取得します。リポジトリへAWSアカウント固有のARNを直接埋め込まず、`prepare-skill-package.mjs` で `.build/skill-package/` へコピーして安全に反映してください。`ask-resources.json` の `skillMetadata.src` は、この生成先だけを指すようにします。
@@ -352,7 +354,7 @@ OIDC trust policyはGitHub Environmentを使う次の形式に固定し、この
 - subject: `repo:yuhara-4113-ai/alexa-skill-charge-janken:environment:development`
 - audience: `sts.amazonaws.com`
 
-GitHub側でもdevelopment Environmentのdeployment branchを `main` に限定します。実装時にはGitHubの実際のOIDC claim形式を確認し、組織や全リポジトリへ広がるwildcardは使わないでください。
+GitHub側でもdevelopment Environmentのdeployment branchを `main` と `codex/**` に限定します。`codex/**` はmainへマージする前の手動development検証だけに使用します。実装時にはGitHubの実際のOIDC claim形式を確認し、組織や全リポジトリへ広がるwildcardは使わないでください。
 
 ### 8.3 GitHubへ登録する値
 
@@ -398,7 +400,7 @@ Workflowの `permissions` は `contents: read` のみとします。
 
 ### 8.5 developmentデプロイ
 
-`deploy.yml` は `main` へのpushと手動実行で起動します。手動実行も `main` を選んだ場合だけdeploy jobを実行し、作業ブランチから共有development環境を変更しません。古い実行と競合しないよう `concurrency` を設定します。
+`deploy.yml` は `main` へのpushと手動実行で起動します。`main` はpushと手動実行、`codex/**` は手動実行の場合だけdeploy jobを実行します。それ以外のブランチはjob条件とEnvironment branch policyの両方で拒否します。作業ブランチとmainは同じdevelopment環境を更新するため、古い実行と競合しないよう `concurrency` を設定します。
 
 `deploy-aws` と `deploy-alexa` の両jobに `environment: development` を指定します。これによりEnvironment Variables/Secretを取得し、OIDCのsubjectをTrust Policyと一致させます。
 
@@ -432,7 +434,7 @@ Workflowの `permissions` は `contents: read` のみとします。
 4. `needs.deploy-aws.outputs` からLambda ARNを受け取り、デプロイ用 `skill-package` を生成する。別jobのworkspaceや一時ファイルが共有される前提にしない。
 5. 検証済みの `ALEXA_SKILL_ID` から `.ask/ask-states.json` を実行時生成する。
 6. `ASK_REFRESH_TOKEN` と `ASK_VENDOR_ID` を環境変数で渡す。
-7. `ask deploy --target skill-metadata` を実行する。
+7. `ask smapi update-skill-manifest` と `ask smapi set-interaction-model` を順に実行する。
 8. `ask smapi get-skill-status --skill-id "$ALEXA_SKILL_ID" --resource interactionModel` を上限2分でpollし、`ja-JP` のFull Build成功を確認する。失敗またはtimeoutはdeploy失敗とする。
 
 `ASK_REFRESH_TOKEN` はWorkflow全体やjob全体の `env` に置かず、ASK CLIを呼ぶstepだけへ渡します。dependency install、build、独自scriptには渡しません。
@@ -503,7 +505,7 @@ Workflowの `permissions` は `contents: read` のみとします。
 - PR CIが認証情報なしで成功する。
 - Workflowに長期AWSアクセスキーを要求する記述がない。
 - LambdaのInvoke権限が `ALEXA_SKILL_ID` に限定されている。
-- ASK CLIが `skill-metadata` 以外をデプロイしない。
+- ASK CLIがマニフェストと対話モデル以外をデプロイしない。
 - `config/deployment.json` とEnvironment VariableのSkill IDが空・placeholder・不一致ならdeployが失敗する。
 - 両deploy jobが `environment: development` を使い、Lambda ARNをjob outputで受け渡す。
 - bootstrapが既存OIDC providerを参照でき、PassRole先とservice conditionが限定されている。
@@ -521,7 +523,7 @@ Workflowの `permissions` は `contents: read` のみとします。
 - [Invocation name requirements](https://developer.amazon.com/ja-JP/docs/alexa/custom-skills/choose-the-invocation-name-for-a-custom-skill.html)
 - [Host a custom skill on Lambda](https://developer.amazon.com/en-US/docs/alexa/custom-skills/host-a-custom-skill-as-an-aws-lambda-function.html)
 - [Alexa request and response reference](https://developer.amazon.com/en-US/docs/alexa/custom-skills/request-and-response-json-reference.html)
-- [SAM AlexaSkill event](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-alexaskill.html)
+- [Configure the Alexa Skills Kit Lambda trigger](https://developer.amazon.com/en-US/docs/alexa/custom-skills/host-a-custom-skill-as-an-aws-lambda-function.html#configure-the-trigger-for-a-lambda-function)
 - [Lambda Node.js runtimes](https://docs.aws.amazon.com/lambda/latest/dg/lambda-nodejs.html)
 - [AWS IAM OIDC federation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_oidc.html)
 - [AWS IAM role for GitHub OIDC](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-idp_oidc.html#idp-github)

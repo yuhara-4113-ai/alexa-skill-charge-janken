@@ -22,11 +22,6 @@
       "custom": {
         "endpoint": {
           "uri": "{{LAMBDA_ARN}}"
-        },
-        "locales": {
-          "ja-JP": {
-            "customInteractionModel": "interactionModels/custom/ja-JP.json"
-          }
         }
       }
     }

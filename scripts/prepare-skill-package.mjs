@@ -14,10 +14,11 @@ await cp(source, destination, { recursive: true });
 
 const manifestPath = resolve(destination, 'skill.json');
 const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-if (manifest.manifest?.apis?.custom?.endpoint?.uri !== '{{LAMBDA_ARN}}') {
-  throw new Error('skill.json must contain only the {{LAMBDA_ARN}} endpoint placeholder.');
+const customApi = manifest.manifest?.apis?.custom;
+if (customApi?.endpoint?.uri !== '{{LAMBDA_ARN}}') {
+  throw new Error('skill.json must contain the {{LAMBDA_ARN}} placeholder for its default endpoint.');
 }
-manifest.manifest.apis.custom.endpoint.uri = lambdaArn;
+customApi.endpoint.uri = lambdaArn;
 const serialized = `${JSON.stringify(manifest, null, 2)}\n`;
 if (serialized.includes('{{LAMBDA_ARN}}') || serialized.includes('REPLACE_AFTER_CONSOLE_CREATION')) {
   throw new Error('The generated skill package contains an unresolved placeholder.');
