@@ -105,24 +105,39 @@ jobs:
           node scripts/validate-skill-package.mjs .build/skill-package
       - name: Install ASK CLI
         run: npm install --global ask-cli@2.30.7
-      - name: Deploy skill metadata and wait for interaction model build
+      - name: Update skill manifest and interaction model
         env:
           ALEXA_SKILL_ID: ${{ vars.ALEXA_SKILL_ID }}
           ASK_VENDOR_ID: ${{ vars.ASK_VENDOR_ID }}
           ASK_REFRESH_TOKEN: ${{ secrets.ASK_REFRESH_TOKEN }}
         run: |
           node scripts/write-ask-state.mjs "$ALEXA_SKILL_ID"
-          ask deploy --target skill-metadata
-          for attempt in $(seq 1 24); do
-            status="$(ask smapi get-skill-status --skill-id "$ALEXA_SKILL_ID" --resource interactionModel)"
-            if echo "$status" | grep -q 'SUCCEEDED'; then
-              exit 0
-            fi
-            if echo "$status" | grep -Eq 'FAILED|ERROR'; then
-              echo "$status"
-              exit 1
-            fi
-            sleep 5
-          done
-          echo 'Timed out waiting for the ja-JP interaction model build.'
-          exit 1
+          wait_for_resource() {
+            resource="$1"
+            for attempt in $(seq 1 24); do
+              status="$(ask smapi get-skill-status --skill-id "$ALEXA_SKILL_ID" --resource "$resource")"
+              if echo "$status" | grep -q 'SUCCEEDED'; then
+                return 0
+              fi
+              if echo "$status" | grep -Eq 'FAILED|ERROR'; then
+                echo "$status"
+                return 1
+              fi
+              sleep 5
+            done
+            echo "Timed out waiting for $resource."
+            return 1
+          }
+
+          ask smapi update-skill-manifest \
+            --skill-id "$ALEXA_SKILL_ID" \
+            --stage development \
+            --manifest "$(cat .build/skill-package/skill.json)"
+          wait_for_resource manifest
+
+          ask smapi set-interaction-model \
+            --skill-id "$ALEXA_SKILL_ID" \
+            --stage development \
+            --locale ja-JP \
+            --interaction-model "$(cat .build/skill-package/interactionModels/custom/ja-JP.json)"
+          wait_for_resource interactionModel

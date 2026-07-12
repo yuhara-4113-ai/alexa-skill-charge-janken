@@ -12,7 +12,7 @@
 1. IaCはAWS SAMに固定し、CDKとの選択を実装担当へ残さない。
 2. GitHub ActionsからAWSへの認証には、長期アクセスキーではなくGitHub OIDCと一時認証情報を使う。
 3. SAMをLambda・IAM・CloudWatch Logsの唯一の管理者にする。
-4. ASK CLIは `ask deploy --target skill-metadata` だけを使い、Alexaのマニフェストと対話モデルだけを更新する。
+4. ASK CLIは低レベルSMAPIコマンドを使い、Alexaのマニフェストと対話モデルだけを個別に更新する。
 5. Skill IDだけではASK CLIを認証できないため、Amazon Developer用のrefresh tokenも準備する。
 6. `main` へのマージ先は、公開前のdevelopment環境とする。Alexa Storeのlive環境への公開は自動化しない。
 7. Alexaは応答を話し終えた後にマイクを開くため、厳密な同時タイミングゲームではなく、Alexaの手を先に隠して確定するターン制ゲームとして実装する。
@@ -46,7 +46,7 @@ flowchart LR
     GH --> AlexaJob["deploy-alexa job"]
     AWSJob -->|OIDCの一時認証情報| SAM["AWS SAM / CloudFormation"]
     SAM --> Lambda["AWS Lambda"]
-    AlexaJob -->|ASK refresh token| ASK["ASK CLI<br/>skill-metadataのみ"]
+    AlexaJob -->|ASK refresh token| ASK["ASK CLI<br/>manifest / modelのみ"]
     ASK --> Alexa["Alexa development stage"]
     Alexa -->|Skill IDで制限| Lambda
 ```
@@ -60,7 +60,7 @@ flowchart LR
 | AWSへのデプロイ権限 | GitHub OIDC Pipeline Role |
 | Alexa Developerへのデプロイ権限 | `ASK_REFRESH_TOKEN` |
 
-通常の `ask deploy` は構成次第でLambdaやCloudFormationも更新するため使用禁止です。必ず `--target skill-metadata` を付けます。
+高レベルの `ask deploy` はスキルパッケージ全体をインポートし、構成次第ではLambdaやCloudFormationも更新します。このリポジトリでは使用せず、`update-skill-manifest` と `set-interaction-model` だけを使います。
 
 ## 3. MVPのゲーム仕様
 
@@ -434,7 +434,7 @@ Workflowの `permissions` は `contents: read` のみとします。
 4. `needs.deploy-aws.outputs` からLambda ARNを受け取り、デプロイ用 `skill-package` を生成する。別jobのworkspaceや一時ファイルが共有される前提にしない。
 5. 検証済みの `ALEXA_SKILL_ID` から `.ask/ask-states.json` を実行時生成する。
 6. `ASK_REFRESH_TOKEN` と `ASK_VENDOR_ID` を環境変数で渡す。
-7. `ask deploy --target skill-metadata` を実行する。
+7. `ask smapi update-skill-manifest` と `ask smapi set-interaction-model` を順に実行する。
 8. `ask smapi get-skill-status --skill-id "$ALEXA_SKILL_ID" --resource interactionModel` を上限2分でpollし、`ja-JP` のFull Build成功を確認する。失敗またはtimeoutはdeploy失敗とする。
 
 `ASK_REFRESH_TOKEN` はWorkflow全体やjob全体の `env` に置かず、ASK CLIを呼ぶstepだけへ渡します。dependency install、build、独自scriptには渡しません。
@@ -505,7 +505,7 @@ Workflowの `permissions` は `contents: read` のみとします。
 - PR CIが認証情報なしで成功する。
 - Workflowに長期AWSアクセスキーを要求する記述がない。
 - LambdaのInvoke権限が `ALEXA_SKILL_ID` に限定されている。
-- ASK CLIが `skill-metadata` 以外をデプロイしない。
+- ASK CLIがマニフェストと対話モデル以外をデプロイしない。
 - `config/deployment.json` とEnvironment VariableのSkill IDが空・placeholder・不一致ならdeployが失敗する。
 - 両deploy jobが `environment: development` を使い、Lambda ARNをjob outputで受け渡す。
 - bootstrapが既存OIDC providerを参照でき、PassRole先とservice conditionが限定されている。

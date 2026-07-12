@@ -155,7 +155,7 @@ gh run list --workflow deploy.yml --branch codex/<ブランチ名> --limit 1
 gh run watch <run-id> --exit-status
 ```
 
-作業ブランチとmainは同じdevelopment stackとAlexa development stageを更新するため、同時実行は `concurrency` で直列化します。成功したLambda ARNだけを使って `ask deploy --target skill-metadata` を実行し、live環境やStore公開は更新しません。
+作業ブランチとmainは同じdevelopment stackとAlexa development stageを更新するため、同時実行は `concurrency` で直列化します。成功したLambda ARNだけを使い、ASK CLIのSMAPIコマンドでマニフェストと対話モデルを個別に更新します。live環境やStore公開は更新しません。
 
 初回作成に失敗したapplication stackが `ROLLBACK_COMPLETE` の場合、そのstackは更新できません。原因を修正したことを確認してから、AWS ConsoleまたはCloudShellで対象stackを一度だけ手動削除してください。GitHub Actionsにはstack削除権限を持たせません。
 
