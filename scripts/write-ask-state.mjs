@@ -27,7 +27,7 @@ await writeFile(join(askDirectory, 'cli_config'), `${JSON.stringify({
         refresh_token: refreshToken,
         token_type: 'bearer',
         expires_in: 0,
-        expires_at: 0,
+        expires_at: new Date(0).toISOString(),
       },
     },
   },
