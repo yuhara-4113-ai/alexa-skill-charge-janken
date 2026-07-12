@@ -352,7 +352,7 @@ OIDC trust policyはGitHub Environmentを使う次の形式に固定し、この
 - subject: `repo:yuhara-4113-ai/alexa-skill-charge-janken:environment:development`
 - audience: `sts.amazonaws.com`
 
-GitHub側でもdevelopment Environmentのdeployment branchを `main` に限定します。実装時にはGitHubの実際のOIDC claim形式を確認し、組織や全リポジトリへ広がるwildcardは使わないでください。
+GitHub側でもdevelopment Environmentのdeployment branchを `main` と `codex/**` に限定します。`codex/**` はmainへマージする前の手動development検証だけに使用します。実装時にはGitHubの実際のOIDC claim形式を確認し、組織や全リポジトリへ広がるwildcardは使わないでください。
 
 ### 8.3 GitHubへ登録する値
 
@@ -398,7 +398,7 @@ Workflowの `permissions` は `contents: read` のみとします。
 
 ### 8.5 developmentデプロイ
 
-`deploy.yml` は `main` へのpushと手動実行で起動します。手動実行も `main` を選んだ場合だけdeploy jobを実行し、作業ブランチから共有development環境を変更しません。古い実行と競合しないよう `concurrency` を設定します。
+`deploy.yml` は `main` へのpushと手動実行で起動します。`main` はpushと手動実行、`codex/**` は手動実行の場合だけdeploy jobを実行します。それ以外のブランチはjob条件とEnvironment branch policyの両方で拒否します。作業ブランチとmainは同じdevelopment環境を更新するため、古い実行と競合しないよう `concurrency` を設定します。
 
 `deploy-aws` と `deploy-alexa` の両jobに `environment: development` を指定します。これによりEnvironment Variables/Secretを取得し、OIDCのsubjectをTrust Policyと一致させます。
 
