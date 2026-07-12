@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "default": {
+      "skillMetadata": {
+        "src": ".build/skill-package"
+      }
+    }
+  }
+}

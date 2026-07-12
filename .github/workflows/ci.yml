@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: lambda/package-lock.json
+      - name: Install Lambda dependencies
+        run: npm --prefix lambda ci
+      - name: Lint Lambda
+        run: npm --prefix lambda run lint
+      - name: Typecheck Lambda
+        run: npm --prefix lambda run typecheck
+      - name: Test Lambda
+        run: npm --prefix lambda test
+      - name: Build Lambda
+        run: npm --prefix lambda run build
+      - name: Install AWS SAM CLI
+        run: pipx install aws-sam-cli
+      - name: Validate SAM template
+        run: sam validate --lint --template-file template.yaml
+      - name: Build SAM application
+        run: sam build --template-file template.yaml
+      - name: Validate skill package JSON and required fields
+        run: |
+          node scripts/validate-skill-package.mjs skill-package
+          node scripts/prepare-skill-package.mjs arn:aws:lambda:us-west-2:123456789012:function:ci-placeholder
+          node scripts/validate-skill-package.mjs .build/skill-package

@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "session": {
+    "new": true,
+    "sessionId": "SessionId.local-fixture",
+    "application": { "applicationId": "amzn1.ask.skill.local-test" },
+    "user": { "userId": "amzn1.ask.account.local-test" }
+  },
+  "context": {
+    "System": {
+      "application": { "applicationId": "amzn1.ask.skill.local-test" },
+      "user": { "userId": "amzn1.ask.account.local-test" },
+      "device": { "deviceId": "local-device", "supportedInterfaces": {} }
+    }
+  },
+  "request": {
+    "type": "LaunchRequest",
+    "requestId": "EdwRequestId.local-fixture",
+    "timestamp": "2026-07-12T00:00:00Z",
+    "locale": "ja-JP"
+  }
+}

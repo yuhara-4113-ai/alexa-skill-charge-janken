@@ -1,0 +1,27 @@
+{
+  "name": "charge-janken-lambda",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "lint": "eslint src test",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "ask-sdk-core": "2.14.0",
+    "ask-sdk-model": "1.86.0",
+    "esbuild": "0.25.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.23.0",
+    "@types/node": "22.15.3",
+    "eslint": "9.23.0",
+    "typescript": "5.8.3",
+    "typescript-eslint": "8.29.0",
+    "vitest": "3.1.2"
+  }
+}

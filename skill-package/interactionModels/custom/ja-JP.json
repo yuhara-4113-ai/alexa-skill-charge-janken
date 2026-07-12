@@ -1,0 +1,65 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "チャージじゃんけん",
+      "intents": [
+        {
+          "name": "ActionIntent",
+          "slots": [
+            {
+              "name": "action",
+              "type": "ACTION_TYPE"
+            }
+          ],
+          "samples": [
+            "{action}",
+            "私は{action}",
+            "{action}にする"
+          ]
+        },
+        {
+          "name": "StartGameIntent",
+          "samples": [
+            "スタート",
+            "始める",
+            "ゲームを始める"
+          ]
+        },
+        { "name": "AMAZON.YesIntent", "samples": [] },
+        { "name": "AMAZON.NoIntent", "samples": [] },
+        { "name": "AMAZON.HelpIntent", "samples": [] },
+        { "name": "AMAZON.FallbackIntent", "samples": [] },
+        { "name": "AMAZON.StopIntent", "samples": [] },
+        { "name": "AMAZON.CancelIntent", "samples": [] }
+      ],
+      "types": [
+        {
+          "name": "ACTION_TYPE",
+          "values": [
+            {
+              "id": "charge",
+              "name": {
+                "value": "溜め",
+                "synonyms": ["ためる", "チャージ"]
+              }
+            },
+            {
+              "id": "attack",
+              "name": {
+                "value": "攻撃",
+                "synonyms": ["アタック", "ビーム"]
+              }
+            },
+            {
+              "id": "defend",
+              "name": {
+                "value": "防御",
+                "synonyms": ["ガード", "バリア"]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

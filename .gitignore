@@ -1,0 +1,8 @@
+node_modules/
+lambda/node_modules/
+lambda/dist/
+coverage/
+.aws-sam/
+.ask/
+.build/
+.DS_Store

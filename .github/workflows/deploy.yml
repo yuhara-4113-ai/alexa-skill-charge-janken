@@ -1,0 +1,122 @@
+name: Deploy development
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: charge-janken-development
+  cancel-in-progress: false
+
+jobs:
+  deploy-aws:
+    environment: development
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      lambda_arn: ${{ steps.function-output.outputs.lambda_arn }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: lambda/package-lock.json
+      - name: Validate deployment identity
+        env:
+          ALEXA_SKILL_ID: ${{ vars.ALEXA_SKILL_ID }}
+        run: node scripts/validate-deployment.mjs
+      - name: Install Lambda dependencies
+        run: npm --prefix lambda ci
+      - name: Verify Lambda
+        run: |
+          npm --prefix lambda run lint
+          npm --prefix lambda run typecheck
+          npm --prefix lambda test
+          npm --prefix lambda run build
+      - name: Install AWS SAM CLI
+        run: pipx install aws-sam-cli
+      - name: Validate and build SAM application
+        run: |
+          sam validate --lint --template-file template.yaml
+          sam build --template-file template.yaml
+      - name: Configure AWS credentials with GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@cabfdba3510de1431bac9dba27511d97497fc100
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+      - name: Deploy Lambda with SAM
+        env:
+          ALEXA_SKILL_ID: ${{ vars.ALEXA_SKILL_ID }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          SAM_ARTIFACT_BUCKET: ${{ vars.SAM_ARTIFACT_BUCKET }}
+          SAM_STACK_NAME: ${{ vars.SAM_STACK_NAME }}
+          CFN_EXECUTION_ROLE_ARN: ${{ vars.CFN_EXECUTION_ROLE_ARN }}
+        run: |
+          sam deploy \
+            --stack-name "$SAM_STACK_NAME" \
+            --region "$AWS_REGION" \
+            --s3-bucket "$SAM_ARTIFACT_BUCKET" \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --parameter-overrides AlexaSkillId="$ALEXA_SKILL_ID" \
+            --role-arn "$CFN_EXECUTION_ROLE_ARN" \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset
+      - id: function-output
+        name: Read Lambda ARN from CloudFormation output
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          SAM_STACK_NAME: ${{ vars.SAM_STACK_NAME }}
+        run: |
+          lambda_arn="$(aws cloudformation describe-stacks --stack-name "$SAM_STACK_NAME" --region "$AWS_REGION" --query 'Stacks[0].Outputs[?OutputKey==`SkillFunctionArn`].OutputValue' --output text)"
+          test -n "$lambda_arn"
+          echo "lambda_arn=$lambda_arn" >> "$GITHUB_OUTPUT"
+
+  deploy-alexa:
+    needs: deploy-aws
+    environment: development
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version-file: .nvmrc
+      - name: Validate deployment identity and generate skill package
+        env:
+          ALEXA_SKILL_ID: ${{ vars.ALEXA_SKILL_ID }}
+        run: |
+          node scripts/validate-deployment.mjs
+          node scripts/prepare-skill-package.mjs '${{ needs.deploy-aws.outputs.lambda_arn }}'
+          node scripts/validate-skill-package.mjs .build/skill-package
+      - name: Install ASK CLI
+        run: npm install --global ask-cli@2.30.7
+      - name: Deploy skill metadata and wait for interaction model build
+        env:
+          ALEXA_SKILL_ID: ${{ vars.ALEXA_SKILL_ID }}
+          ASK_VENDOR_ID: ${{ vars.ASK_VENDOR_ID }}
+          ASK_REFRESH_TOKEN: ${{ secrets.ASK_REFRESH_TOKEN }}
+        run: |
+          node scripts/write-ask-state.mjs "$ALEXA_SKILL_ID"
+          ask deploy --target skill-metadata
+          for attempt in $(seq 1 24); do
+            status="$(ask smapi get-skill-status --skill-id "$ALEXA_SKILL_ID" --resource interactionModel)"
+            if echo "$status" | grep -q 'SUCCEEDED'; then
+              exit 0
+            fi
+            if echo "$status" | grep -Eq 'FAILED|ERROR'; then
+              echo "$status"
+              exit 1
+            fi
+            sleep 5
+          done
+          echo 'Timed out waiting for the ja-JP interaction model build.'
+          exit 1

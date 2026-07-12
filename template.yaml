@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Backend for the Charge Janken Alexa skill.
+
+Parameters:
+  AlexaSkillId:
+    Type: String
+    AllowedPattern: '^amzn1\.ask\.skill\.[A-Za-z0-9-]+$'
+    ConstraintDescription: Enter the Alexa Skill ID created in the Developer Console.
+
+Resources:
+  LambdaRuntimeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-lambda-runtime'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CloudWatchLogsOnly
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-handler:*'
+
+  SkillFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${AWS::StackName}-handler'
+      RetentionInDays: 14
+
+  SkillFunction:
+    Type: AWS::Serverless::Function
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-handler'
+      CodeUri: lambda/
+      Handler: index.handler
+      Runtime: nodejs24.x
+      Timeout: 5
+      MemorySize: 256
+      Role: !GetAtt LambdaRuntimeRole.Arn
+      Environment:
+        Variables:
+          ALEXA_SKILL_ID: !Ref AlexaSkillId
+      Events:
+        AlexaSkill:
+          Type: AlexaSkill
+          Properties:
+            SkillId: !Ref AlexaSkillId
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - src/index.ts
+        Target: es2022
+        Minify: false
+
+Outputs:
+  SkillFunctionArn:
+    Description: Lambda endpoint ARN used by the Alexa skill metadata deployment.
+    Value: !GetAtt SkillFunction.Arn

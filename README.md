@@ -80,7 +80,82 @@
 
 ## セットアップ
 
-実装前の確定事項と作業順は[Terra実装引き継ぎ](docs/implementation-handoff.md)を参照してください。実装完了時に、実際の初回セットアップ・デプロイ・テスト手順をこの欄へ追記します。
+実装の判断基準は[実装引き継ぎ](docs/implementation-handoff.md)です。AWS/Alexaの認証情報をこのリポジトリへ保存せず、development環境だけをGitHub Actionsから更新します。Alexa Storeへの公開は行いません。
+
+### ローカル開発
+
+必要なものは Node.js 24、npm、AWS SAM CLI です。`sam local invoke` まで試す場合はDockerも必要です。
+
+```bash
+npm --prefix lambda ci
+npm --prefix lambda run lint
+npm --prefix lambda run typecheck
+npm --prefix lambda test
+npm --prefix lambda run build
+sam validate --lint --template-file template.yaml
+sam build --template-file template.yaml
+```
+
+Alexaのリクエスト形式で起動処理を確認するには、実在するSkill IDを渡して次を実行します。これはローカル実行であり、AWSへはデプロイしません。
+
+```bash
+sam local invoke SkillFunction \
+  --event tests/fixtures/alexa-requests/launch.json \
+  --parameter-overrides AlexaSkillId=amzn1.ask.skill.実際のSkill_ID
+```
+
+### 初回だけ行う設定
+
+1. Alexa Developer Consoleで `Custom` / `Provision your own backend resources` / `ja-JP` のスキルを作成し、表示名・起動名を「チャージじゃんけん」にする。
+2. 取得したSkill IDを `config/deployment.json` のplaceholderと、後述のGitHub Variable `ALEXA_SKILL_ID` の両方に同じ値で設定する。
+3. ローカル端末で一度だけ `ask configure` を実行し、refresh tokenとVendor IDを取得する。AmazonのID・パスワードや `~/.ask/cli_config` 全体は共有・コミットしない。
+4. `infrastructure/bootstrap.yaml` を `us-west-2` に適用する。OIDC providerがAWSアカウントに無い場合は既定値のまま、既存なら `CreateGitHubOidcProvider=false` と `ExistingGitHubOidcProviderArn` を渡す。
+
+```bash
+aws cloudformation deploy \
+  --region us-west-2 \
+  --stack-name alexa-skill-charge-janken-bootstrap \
+  --template-file infrastructure/bootstrap.yaml \
+  --capabilities CAPABILITY_NAMED_IAM
+```
+
+bootstrap完了後、出力の `GitHubPipelineRoleArn`、`CloudFormationExecutionRoleArn`、`ArtifactBucketName` を控えます。既存OIDC providerを使う場合は、例えば次のように明示します。
+
+```bash
+aws cloudformation deploy \
+  --region us-west-2 \
+  --stack-name alexa-skill-charge-janken-bootstrap \
+  --template-file infrastructure/bootstrap.yaml \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --parameter-overrides CreateGitHubOidcProvider=false ExistingGitHubOidcProviderArn=arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com
+```
+
+### GitHub Actionsの設定
+
+GitHubに `development` Environmentを作り、deployment branchを `main` に限定します。利用できるプランではrequired reviewerも設定します。Environment Variablesには次を登録します。
+
+| Variable | 値 |
+|---|---|
+| `ALEXA_SKILL_ID` | `config/deployment.json` と同じSkill ID |
+| `ASK_VENDOR_ID` | Amazon Developer Vendor ID |
+| `AWS_ACCOUNT_ID` | デプロイ先AWSアカウントID |
+| `AWS_REGION` | `us-west-2` |
+| `AWS_ROLE_ARN` | bootstrapのGitHub Pipeline Role ARN |
+| `CFN_EXECUTION_ROLE_ARN` | bootstrapのCloudFormation Execution Role ARN |
+| `SAM_ARTIFACT_BUCKET` | bootstrapのartifact bucket名 |
+| `SAM_STACK_NAME` | `alexa-skill-charge-janken-dev` |
+
+Environment Secretは `ASK_REFRESH_TOKEN` だけです。`AWS_ACCESS_KEY_ID` と `AWS_SECRET_ACCESS_KEY` は登録しません。
+
+`main` のRulesetでは、PR、CI成功、CODEOWNERS reviewを必須にし、force pushとbranch削除を禁止してください。CODEOWNERSはworkflowとbootstrap templateを対象にしています。設定後、mainへのpushでLambdaをdevelopmentへデプロイし、成功したLambda ARNだけを使って `ask deploy --target skill-metadata` を実行します。live環境やStore公開は更新しません。
+
+Skill IDが空・placeholder・形式不正・`config/deployment.json` と不一致のとき、deploy workflowはAWSへ接続する前に失敗します。
+
+### 対話モデルの反映確認
+
+CIは認証情報なしでLambdaのlint・型チェック・テスト・build、SAM validate/build、対話モデルJSONを検証します。development deployでは、ASK CLIが対話モデルのFull Buildを最大2分待ちます。
+
+デプロイ後の動作確認はDeveloper ConsoleのTestタブで行い、最後にEcho実機で発話後のマイク開始、reprompt、認識しやすさを確認してください。発話ログ・ユーザーID・生の発話はLambdaへ記録しません。
 
 ## ライセンス
 

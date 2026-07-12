@@ -1,0 +1,34 @@
+{
+  "manifest": {
+    "manifestVersion": "1.0",
+    "publishingInformation": {
+      "locales": {
+        "ja-JP": {
+          "name": "チャージじゃんけん",
+          "summary": "溜め、攻撃、防御で遊ぶ1対1の音声ゲームです。",
+          "description": "Alexaと溜め、攻撃、防御を選んで対戦するターン制ゲームです。攻撃と溜めがぶつかると勝負が決まります。",
+          "examplePhrases": [
+            "アレクサ、チャージじゃんけんを開いて",
+            "アレクサ、チャージじゃんけんをスタート",
+            "アレクサ、チャージじゃんけんで遊んで"
+          ]
+        }
+      },
+      "category": "GAMES",
+      "distributionCountries": ["JP"],
+      "testingInstructions": "スキルを起動し、「はい」と答えたあと、溜め、攻撃、防御のいずれかを発話してください。"
+    },
+    "apis": {
+      "custom": {
+        "endpoint": {
+          "uri": "{{LAMBDA_ARN}}"
+        },
+        "locales": {
+          "ja-JP": {
+            "customInteractionModel": "interactionModels/custom/ja-JP.json"
+          }
+        }
+      }
+    }
+  }
+}
