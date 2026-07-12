@@ -14,6 +14,7 @@ concurrency:
 
 jobs:
   deploy-aws:
+    if: github.ref == 'refs/heads/main'
     environment: development
     runs-on: ubuntu-24.04
     permissions:
@@ -80,6 +81,7 @@ jobs:
           echo "lambda_arn=$lambda_arn" >> "$GITHUB_OUTPUT"
 
   deploy-alexa:
+    if: github.ref == 'refs/heads/main'
     needs: deploy-aws
     environment: development
     runs-on: ubuntu-24.04

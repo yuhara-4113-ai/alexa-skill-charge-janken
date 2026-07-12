@@ -150,6 +150,9 @@ const NoHandler = {
   },
   handle(input: HandlerInput): Response {
     const session = sessionFor(input);
+    if (session.phase === 'AWAITING_ACTION') {
+      return ask(input, session, `ゲームを続けるよ。${phaseGuidance(session)}`, phaseGuidance(session));
+    }
     const score = `通算はあなた${session.playerWins}勝、私${session.alexaWins}勝。`;
     return end(input, session, `${score}また遊んでね。`);
   },

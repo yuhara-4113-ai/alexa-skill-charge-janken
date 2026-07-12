@@ -2,7 +2,7 @@
 
 子供の伝統的な手遊び「CCレモンゲーム」「バトルじゃんけん」をモチーフにした、Alexaスキル（音声対戦ゲーム）です。
 
-現在は設計完了・実装前です。確定した技術方針、MVP仕様、CI/CD、Terra向けの実装条件は[実装引き継ぎ](docs/implementation-handoff.md)にまとめています。
+MVPのコードとCI/CD定義は実装済みです。確定した技術方針、MVP仕様、CI/CDの判断基準は[実装引き継ぎ](docs/implementation-handoff.md)にまとめています。development環境への初回デプロイとAlexa実機テストは未完了です。
 
 ## ゲームルール
 
@@ -63,7 +63,7 @@
 - **音声対話モデル**: Alexa Skills Kit カスタムスキル
 - **インフラ管理**: AWS SAM
 - **AWS認証**: GitHub OIDC（一時認証情報。長期アクセスキーは使わない）
-- **CI/CD**: GitHub Actions（PRごとにLint・型チェック・テスト。作業ブランチでdevelopment検証後、mainマージで同環境を更新）
+- **CI/CD**: GitHub Actions（PRごとにLint・型チェック・テスト、mainマージでdevelopment環境を更新）
 - **責任境界**: SAMがAWSリソース、ASK CLIがAlexaのマニフェスト・対話モデルを管理
 
 ## ディレクトリ構成
@@ -132,7 +132,7 @@ aws cloudformation deploy \
 
 ### GitHub Actionsの設定
 
-GitHubに `development` Environmentを作り、deployment branchはcustom branch policyで `main` と `codex/**` を許可します。これによりCodexの作業ブランチから `workflow_dispatch` でdevelopment検証できます。自動デプロイは `main` へのpushだけです。利用できるプランではrequired reviewerも設定します。Environment Variablesには次を登録します。
+GitHubに `development` Environmentを作り、deployment branchを `main` に限定します。手動実行も `main` を選んだ場合だけデプロイされます。利用できるプランではrequired reviewerも設定します。Environment Variablesには次を登録します。
 
 | Variable | 値 |
 |---|---|
@@ -147,15 +147,9 @@ GitHubに `development` Environmentを作り、deployment branchはcustom branch
 
 Environment Secretは `ASK_REFRESH_TOKEN` だけです。`AWS_ACCESS_KEY_ID` と `AWS_SECRET_ACCESS_KEY` は登録しません。
 
-`main` のRulesetでは、PRとCI成功を必須にし、force pushとbranch削除を禁止してください。CODEOWNERSはworkflowとbootstrap templateを対象にしています。作業ブランチをpushしたら、mainへマージする前に次でdevelopmentへ手動デプロイして検証します。
+`main` のRulesetでは、PR、CI成功、CODEOWNERS reviewを必須にし、force pushとbranch削除を禁止してください。CODEOWNERSはworkflowとbootstrap templateを対象にしています。mainへのマージ後、成功したLambda ARNだけを使って `ask deploy --target skill-metadata` を実行します。live環境やStore公開は更新しません。
 
-```bash
-gh workflow run deploy.yml --ref <作業ブランチ名>
-gh run list --workflow deploy.yml --branch <作業ブランチ名> --limit 1
-gh run watch <run-id> --exit-status
-```
-
-作業ブランチの検証とmainへのマージは同じdevelopmentスタックを更新します。検証が済んだ変更だけをPRでmainへ取り込みます。成功したLambda ARNだけを使って `ask deploy --target skill-metadata` を実行します。live環境やStore公開は更新しません。
+初回作成に失敗したapplication stackが `ROLLBACK_COMPLETE` の場合、そのstackは更新できません。原因を修正したことを確認してから、AWS ConsoleまたはCloudShellで対象stackを一度だけ手動削除してください。GitHub Actionsにはstack削除権限を持たせません。
 
 Skill IDが空・placeholder・形式不正・`config/deployment.json` と不一致のとき、deploy workflowはAWSへ接続する前に失敗します。
 

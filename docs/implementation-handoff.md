@@ -276,7 +276,7 @@ ASK CLIの生成物である `.ask/`、デプロイ用一時パッケージの `
 - `AWS::IAM::Role` として `${AWS::StackName}-lambda-runtime` という予測可能なLambda実行ロールを定義し、Functionの `Role` から参照する。
 - Lambda実行ロールはCloudWatch Logs以外の権限を持たせない。
 - CloudWatch Logsの保持期間は14日とする。
-- Function resourceに `DeletionPolicy: Retain` と `UpdateReplacePolicy: Retain` を付け、置換時に旧endpointを即時削除しない。
+- Function resourceに `DeletionPolicy: RetainExceptOnCreate` と `UpdateReplacePolicy: Retain` を付ける。初回作成失敗時は未使用の関数を削除し、正常作成後のstack削除や置換では旧endpointを即時削除しない。
 - CloudFormation OutputにLambda ARNを出す。
 
 Alexaからの呼び出し権限はSkill IDで限定します。
@@ -293,7 +293,7 @@ Events:
 
 PR CIでは構文検証用の明示的なdummy ARNを渡して一時パッケージを生成できます。development deployではCloudFormation Output以外のdummy値や未置換文字列を検出したら、ASK CLIを実行する前に失敗させます。
 
-Retentionにより関数が置換・削除時に残る場合があります。不要になった保持リソースは、endpointが新しいARNへ切り替わったことを確認してから人間が削除します。自動削除は実装しません。
+Retentionにより関数が置換・削除時に残る場合があります。不要になった保持リソースは、endpointが新しいARNへ切り替わったことを確認してから人間が削除します。stackや保持リソースの自動削除は実装しません。
 
 ## 8. GitHub Actionsと認証
 
@@ -398,7 +398,7 @@ Workflowの `permissions` は `contents: read` のみとします。
 
 ### 8.5 developmentデプロイ
 
-`deploy.yml` は `main` へのpushと手動実行で起動します。古い実行と競合しないよう `concurrency` を設定します。
+`deploy.yml` は `main` へのpushと手動実行で起動します。手動実行も `main` を選んだ場合だけdeploy jobを実行し、作業ブランチから共有development環境を変更しません。古い実行と競合しないよう `concurrency` を設定します。
 
 `deploy-aws` と `deploy-alexa` の両jobに `environment: development` を指定します。これによりEnvironment Variables/Secretを取得し、OIDCのsubjectをTrust Policyと一致させます。
 

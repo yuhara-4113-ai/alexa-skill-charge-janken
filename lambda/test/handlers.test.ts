@@ -109,6 +109,18 @@ describe('ASK handlers', () => {
     expect(stop.response.shouldEndSession).toBe(true);
   });
 
+  it('does not treat no as quitting while choosing an action', async () => {
+    const state = prepareActionRound({ ...initialSession(), phase: 'AWAITING_ACTION' });
+    const response = await createSkill(skillId).invoke(envelope({
+      type: 'IntentRequest',
+      intent: { name: 'AMAZON.NoIntent', confirmationStatus: 'NONE', slots: {} },
+    }, state));
+
+    expect(response.response.shouldEndSession).toBe(false);
+    expect(responseSpeech(response.response)).toContain('ゲームを続ける');
+    expect(response.sessionAttributes).toMatchObject(state);
+  });
+
   it('rejects requests for a different skill ID', async () => {
     const wrongSkillRequest = envelope({ type: 'LaunchRequest' });
     wrongSkillRequest.context.System.application.applicationId = 'amzn1.ask.skill.other';
