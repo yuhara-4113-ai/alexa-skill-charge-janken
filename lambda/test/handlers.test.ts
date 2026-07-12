@@ -121,6 +121,17 @@ describe('ASK handlers', () => {
     expect(response.sessionAttributes).toMatchObject(state);
   });
 
+  it('omits an empty score when declining before the first round', async () => {
+    const response = await createSkill(skillId).invoke(envelope({
+      type: 'IntentRequest',
+      intent: { name: 'AMAZON.NoIntent', confirmationStatus: 'NONE', slots: {} },
+    }, initialSession()));
+
+    expect(response.response.shouldEndSession).toBe(true);
+    expect(responseSpeech(response.response)).not.toContain('通算');
+    expect(responseSpeech(response.response)).toContain('また遊んでね');
+  });
+
   it('rejects requests for a different skill ID', async () => {
     const wrongSkillRequest = envelope({ type: 'LaunchRequest' });
     wrongSkillRequest.context.System.application.applicationId = 'amzn1.ask.skill.other';
