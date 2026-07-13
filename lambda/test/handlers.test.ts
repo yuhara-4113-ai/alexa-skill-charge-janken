@@ -85,7 +85,7 @@ describe('ASK handlers', () => {
     const response = await createSkill(skillId).invoke(envelope(actionRequest('defend'), state));
     const speech = responseSpeech(response.response);
 
-    expect(speech).toBe('私は防御。せーの。');
+    expect(speech).toBe('私はバリアー。せーの。');
     expect(speech).not.toContain('あなたは');
     expect(speech).not.toContain('引き分け');
     expect(speech).not.toContain('第');
@@ -102,7 +102,7 @@ describe('ASK handlers', () => {
     const response = await createSkill(skillId).invoke(envelope(actionRequest('attack'), state));
     const speech = responseSpeech(response.response);
 
-    expect(speech).toBe('私は溜め。あなたの勝ち！ もう一回やる？');
+    expect(speech).toBe('私はチャージ。あなたの勝ち！ もう一回やる？');
     expect(speech).not.toContain('あなたは');
     expect(speech).not.toContain('第');
   });
@@ -175,7 +175,7 @@ describe('ASK handlers', () => {
       round: 2,
     };
     const fire = await createSkill(skillId).invoke(envelope(actionRequest('fire'), fireState));
-    expect(responseSpeech(fire.response)).toBe('私は攻撃。あなたの勝ち！ もう一回やる？');
+    expect(responseSpeech(fire.response)).toBe('私はビーム。あなたの勝ち！ もう一回やる？');
     expect(fire.sessionAttributes).toMatchObject({ playerPower: 0, alexaPower: 0 });
 
     const blackholeState = {

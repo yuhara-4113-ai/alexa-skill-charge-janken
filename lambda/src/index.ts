@@ -10,11 +10,11 @@ import { initialSession, readSession, resetForReplay, type GameSession } from '.
 import { chooseAlexaAction, type Random } from './strategy';
 
 const actionNames: Record<Action, string> = {
-  charge: '溜め',
-  attack: '攻撃',
+  charge: 'チャージ',
+  attack: 'ビーム',
   fire: 'ファイアー',
   blackhole: 'ブラックホール',
-  defend: '防御',
+  defend: 'バリアー',
 };
 
 const actionChoices = '溜め、攻撃、ファイアー、ブラックホール、防御';
