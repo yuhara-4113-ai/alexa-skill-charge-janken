@@ -78,14 +78,13 @@ function resolvedAction(input: HandlerInput): Action | undefined {
   if (request.type !== 'IntentRequest' || request.intent.name !== 'ActionIntent') return undefined;
   const resolutions = request.intent.slots?.action?.resolutions?.resolutionsPerAuthority;
   const match = resolutions?.find((resolution) => resolution.status.code === 'ER_SUCCESS_MATCH');
-  const id = match?.values?.[0]?.value.id;
+  const id = match?.values?.[0]?.value?.id;
   if (isAction(id)) return id;
 
   const rawValue = request.intent.slots?.action?.value?.replace(/\s/g, '')?.toLowerCase();
   if (isAction(rawValue)) return rawValue;
 
-  const alias = rawValue ? actionAliases.get(rawValue) : undefined;
-  return isAction(alias) ? alias : undefined;
+  return rawValue ? actionAliases.get(rawValue) : undefined;
 }
 
 function sessionFor(input: HandlerInput): GameSession {
