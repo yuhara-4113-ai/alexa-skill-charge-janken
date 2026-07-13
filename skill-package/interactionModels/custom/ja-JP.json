@@ -13,8 +13,8 @@
           ],
           "samples": [
             "{action}",
-            "私は{action}",
-            "{action}にする"
+            "私は {action}",
+            "{action} にする"
           ]
         },
         {
