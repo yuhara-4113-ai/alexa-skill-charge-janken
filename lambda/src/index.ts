@@ -82,7 +82,8 @@ function resolvedAction(input: HandlerInput): Action | undefined {
   if (isAction(id)) return id;
 
   const rawValue = request.intent.slots?.action?.value?.replace(/\s/g, '');
-  return rawValue ? actionAliases[rawValue] : undefined;
+  const alias = rawValue ? actionAliases[rawValue] : undefined;
+  return isAction(alias) ? alias : undefined;
 }
 
 function sessionFor(input: HandlerInput): GameSession {

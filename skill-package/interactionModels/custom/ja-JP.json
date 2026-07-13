@@ -15,7 +15,7 @@
             "{action}",
             "私は {action}",
             "{action} にする",
-            "{action} で {action} を使う",
+            "{action} を使う",
             "{action} する"
           ]
         },
