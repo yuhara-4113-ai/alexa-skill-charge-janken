@@ -152,8 +152,8 @@ type GameSession = {
 | `AWAITING_READY` | No | 終了 |
 | `AWAITING_ACTION` | 有効なAction | 判定し、継続なら同フェーズ、決着なら `AWAITING_REPLAY` |
 | `AWAITING_ACTION` | 無効なAction | 状態とAlexaの手を変えず再入力 |
-| `AWAITING_REPLAY` | Yes / Start | パワーとラウンドを初期化し `AWAITING_ACTION` |
-| `AWAITING_REPLAY` | No | 通算結果を伝えて終了 |
+| `AWAITING_REPLAY` | Yes / Start / `ReplayYesIntent` | パワーとラウンドを初期化し、技一覧を省略して「せーの。」で `AWAITING_ACTION` |
+| `AWAITING_REPLAY` | No / `ReplayNoIntent` | 通算結果を伝えて終了 |
 | 任意 | Help | 現在のフェーズに合う説明後、同じフェーズへ戻る |
 | 任意 | Stop / Cancel | 終了 |
 | 任意 | Fallback | 現在のフェーズで言える言葉を短く案内 |
@@ -174,22 +174,28 @@ ActionIntent
 
 | ID | 代表値・同義語 |
 |---|---|
-| `charge` | 溜め、ためる、チャージ |
+| `charge` | 溜め、ためる、ため、チャージ |
 | `attack` | 攻撃、アタック、ビーム |
 | `fire` | ファイアー、ファイヤー、ファイア、ファイヤ |
 | `blackhole` | ブラックホール |
-| `defend` | 防御、ガード、バリア |
+| `defend` | 防御、ガード、バリアー、バリア |
 
 必要なIntentは次のとおりです。
 
 - `ActionIntent`
 - `StartGameIntent`（「スタート」「始める」「ゲームを始める」）
+- `ReplayYesIntent`（「やる」「うん」「もう一回」「続ける」など）
+- `ReplayNoIntent`（「やらない」「終わる」「もうやめる」「おしまい」など）
 - `AMAZON.YesIntent`
 - `AMAZON.NoIntent`
 - `AMAZON.HelpIntent`
 - `AMAZON.FallbackIntent`
 - `AMAZON.StopIntent`
 - `AMAZON.CancelIntent`
+
+`ActionIntent` はentity resolutionが `ER_SUCCESS_MATCH` の場合は解決済みIDを優先します。一致しない場合は、スロットの生値から空白を除去し、定義済みの行動別名（「ファイア」「ファイヤ」「バリア」「バリアー」など）だけを補完します。未知の値は推測で変換せず、Alexaの保留中の行動を維持して再入力を促します。
+
+初回起動時は技の一覧を案内します。勝敗後に再戦するときはパワー・ラウンド・保留中のAlexaの行動だけをリセットし、「せーの。」で第1ラウンドを開始します。勝数は維持します。再戦確認のrepromptは「もう一回なら『はい』か『やる』、終わるなら『いいえ』か『やらない』と言ってね。」とします。
 
 表示名・起動名は、MVPの仮名称として「チャージじゃんけん」を使います。初回デプロイ前にDeveloper Consoleと実機で認識しやすさを確認し、ユーザーが別名を選んだ場合は `skill.json`、`ja-JP.json`、テストを同時に変更してください。第三者の商標名は公開用metadataへ使用しません。
 
@@ -466,6 +472,9 @@ Workflowの `permissions` は `contents: read` のみとします。
 - 再戦でパワーとラウンドは戻り、同一セッションの勝数は残る。
 - phase外のIntent、Fallback、Help、Stopの応答。
 - Skill ID不一致のリクエスト拒否。
+- 再戦時の短い案内と勝数維持。
+- entity resolution不一致時の既知の別名フォールバックと未知語の拒否。
+- `ReplayYesIntent` / `ReplayNoIntent` と既存のYes/Noによる再戦・終了。
 
 ### 9.2 ローカル・結合テスト
 

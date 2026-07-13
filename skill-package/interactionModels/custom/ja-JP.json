@@ -14,7 +14,9 @@
           "samples": [
             "{action}",
             "私は {action}",
-            "{action} にする"
+            "{action} にする",
+            "{action} を使う",
+            "{action} する"
           ]
         },
         {
@@ -24,6 +26,14 @@
             "始める",
             "ゲームを始める"
           ]
+        },
+        {
+          "name": "ReplayYesIntent",
+          "samples": ["やる", "うん", "もう一回", "もう一回やる", "続ける", "まだやる"]
+        },
+        {
+          "name": "ReplayNoIntent",
+          "samples": ["やらない", "もうやらない", "終わる", "もうやめる", "やめる", "おしまい"]
         },
         { "name": "AMAZON.YesIntent", "samples": [] },
         { "name": "AMAZON.NoIntent", "samples": [] },
@@ -40,7 +50,7 @@
               "id": "charge",
               "name": {
                 "value": "溜め",
-                "synonyms": ["ためる", "チャージ"]
+                "synonyms": ["ためる", "ため", "チャージ"]
               }
             },
             {
@@ -67,7 +77,7 @@
               "id": "defend",
               "name": {
                 "value": "防御",
-                "synonyms": ["ガード", "バリア"]
+                "synonyms": ["ガード", "バリアー", "バリア"]
               }
             }
           ]

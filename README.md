@@ -2,7 +2,7 @@
 
 子供の伝統的な手遊び「CCレモンゲーム」「バトルじゃんけん」をモチーフにした、Alexaスキル（音声対戦ゲーム）です。
 
-MVPのコードとCI/CD定義は実装済みです。確定した技術方針、MVP仕様、CI/CDの判断基準は[実装引き継ぎ](docs/implementation-handoff.md)にまとめています。development環境への初回デプロイとAlexa実機テストは未完了です。
+MVPのコードとCI/CD定義は実装済みです。確定した技術方針、MVP仕様、CI/CDの判断基準は[実装引き継ぎ](docs/implementation-handoff.md)にまとめています。development環境へのAWS Lambda・Alexa対話モデルのデプロイは確認済みで、Echo実機テストは未完了です。
 
 ## ゲームルール
 
@@ -38,18 +38,20 @@ Alexaは自分の行動を「チャージ」「ビーム」「ファイアー」
 
 - `ActionIntent` + `ACTION_TYPE`スロット（溜め・攻撃・ファイアー・ブラックホール・防御）
 - `StartGameIntent`（ゲーム開始）
-- `AMAZON.YesIntent` / `AMAZON.NoIntent`（ゲーム開始・再戦確認用）
+- `ReplayYesIntent` / `ReplayNoIntent` と `AMAZON.YesIntent` / `AMAZON.NoIntent`（ゲーム開始・再戦確認用）
 - `AMAZON.HelpIntent`
 - `AMAZON.FallbackIntent`
 - `AMAZON.StopIntent` / `AMAZON.CancelIntent`
 
-### スロット・発話サンプル（案）
+### スロット・発話サンプル
 
-- 溜め: 「ためる」「チャージ」「溜め」
+- 溜め: 「ためる」「ため」「チャージ」「溜め」
 - 攻撃: 「攻撃」「アタック」「ビーム」
 - ファイアー: 「ファイアー」「ファイヤー」「ファイア」「ファイヤ」
 - ブラックホール: 「ブラックホール」
-- 防御: 「防御」「ガード」「バリア」
+- 防御: 「防御」「ガード」「バリアー」「バリア」
+
+再戦確認では「はい」や「やる」で続け、「いいえ」や「やらない」で終了できます。再戦開始時は技の一覧を繰り返さず、「せーの。」だけを案内します。対話モデルで行動を解決できない場合も、上記の既知の別名と有効な英語Action IDをLambda側で補完します。英語Action IDは大文字・小文字を区別せず、未知の発話は推測で技に変換しません。
 
 ### セッション管理で保持する状態
 
@@ -82,6 +84,13 @@ Alexaは自分の行動を「チャージ」「ビーム」「ファイアー」
 ## セットアップ
 
 実装の判断基準は[実装引き継ぎ](docs/implementation-handoff.md)です。AWS/Alexaの認証情報をこのリポジトリへ保存せず、development環境だけをGitHub Actionsから更新します。Alexa Storeへの公開は行いません。
+
+### 開発・GitHub操作の方針
+
+- 作業開始前に`git fetch origin`を実行し、最新の`origin/main`を取り込んだブランチで作業します。
+- `fetch`、`merge`、`rebase`、`commit`、`push`などのGit操作は、ローカルのGit CLIで行います。
+- Pull Requestの作成・更新、レビュー確認、GitHub Actionsの実行・監視は、GitHub CLI（`gh`）で行います。
+- ブラウザやGitHub Web UIは原則使用しません。必要な場合は、CLIで実行できない理由・具体的な操作・影響範囲を説明し、事前に許可を得ます。
 
 ### ローカル開発
 

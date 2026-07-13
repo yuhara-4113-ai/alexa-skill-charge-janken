@@ -28,6 +28,25 @@ const playerActionNames: Record<Action, string> = {
 const actionChoices = '溜め、攻撃、ファイアー、ブラックホール、防御';
 const actionPrompt = `${actionChoices}のどれかを言ってね。せーの。`;
 
+const actionAliases = new Map<string, Action>([
+  ['溜め', 'charge'],
+  ['ため', 'charge'],
+  ['ためる', 'charge'],
+  ['チャージ', 'charge'],
+  ['攻撃', 'attack'],
+  ['アタック', 'attack'],
+  ['ビーム', 'attack'],
+  ['ファイアー', 'fire'],
+  ['ファイア', 'fire'],
+  ['ファイヤー', 'fire'],
+  ['ファイヤ', 'fire'],
+  ['ブラックホール', 'blackhole'],
+  ['防御', 'defend'],
+  ['ガード', 'defend'],
+  ['バリアー', 'defend'],
+  ['バリア', 'defend'],
+]);
+
 function saveSession(input: HandlerInput, session: GameSession): void {
   input.attributesManager.setSessionAttributes(session);
 }
@@ -59,8 +78,13 @@ function resolvedAction(input: HandlerInput): Action | undefined {
   if (request.type !== 'IntentRequest' || request.intent.name !== 'ActionIntent') return undefined;
   const resolutions = request.intent.slots?.action?.resolutions?.resolutionsPerAuthority;
   const match = resolutions?.find((resolution) => resolution.status.code === 'ER_SUCCESS_MATCH');
-  const id = match?.values?.[0]?.value.id;
-  return isAction(id) ? id : undefined;
+  const id = match?.values?.[0]?.value?.id;
+  if (isAction(id)) return id;
+
+  const rawValue = request.intent.slots?.action?.value?.replace(/\s/g, '')?.toLowerCase();
+  if (isAction(rawValue)) return rawValue;
+
+  return rawValue ? actionAliases.get(rawValue) : undefined;
 }
 
 function sessionFor(input: HandlerInput): GameSession {
@@ -69,7 +93,7 @@ function sessionFor(input: HandlerInput): GameSession {
 
 function phaseGuidance(session: GameSession): string {
   if (session.phase === 'AWAITING_READY') return '準備ができたら、「はい」か「スタート」と言ってね。';
-  if (session.phase === 'AWAITING_REPLAY') return 'もう一回なら「はい」、終わるなら「いいえ」と言ってね。';
+  if (session.phase === 'AWAITING_REPLAY') return 'もう一回なら「はい」か「やる」、終わるなら「いいえ」か「やらない」と言ってね。';
   return `${actionChoices}のどれかを言ってね。`;
 }
 
@@ -80,7 +104,7 @@ function startOrReplay(input: HandlerInput, session: GameSession): Response {
     alexaWins: session.alexaWins,
   };
   const next = prepareActionRound(reset);
-  return ask(input, next, actionPrompt);
+  return ask(input, next, session.phase === 'AWAITING_REPLAY' ? 'せーの。' : actionPrompt);
 }
 
 const LaunchRequestHandler = {
@@ -97,7 +121,7 @@ const StartHandler = {
   canHandle(input: HandlerInput): boolean {
     const type = getRequestType(input.requestEnvelope);
     const name = type === 'IntentRequest' ? getIntentName(input.requestEnvelope) : undefined;
-    return name === 'StartGameIntent' || name === 'AMAZON.YesIntent';
+    return name === 'StartGameIntent' || name === 'ReplayYesIntent' || name === 'AMAZON.YesIntent';
   },
   handle(input: HandlerInput): Response {
     const session = sessionFor(input);
@@ -145,7 +169,7 @@ const ActionHandler = {
         input,
         next,
         `${roundSpeech}${playerWon ? 'あなたの勝ち！' : '私の勝ち！'} もう一回やる？`,
-        'もう一回なら「はい」、終わるなら「いいえ」と言ってね。',
+        'もう一回なら「はい」か「やる」、終わるなら「いいえ」か「やらない」と言ってね。',
       );
     }
 
@@ -161,7 +185,9 @@ const ActionHandler = {
 
 const NoHandler = {
   canHandle(input: HandlerInput): boolean {
-    return getRequestType(input.requestEnvelope) === 'IntentRequest' && getIntentName(input.requestEnvelope) === 'AMAZON.NoIntent';
+    if (getRequestType(input.requestEnvelope) !== 'IntentRequest') return false;
+    const name = getIntentName(input.requestEnvelope);
+    return name === 'AMAZON.NoIntent' || name === 'ReplayNoIntent';
   },
   handle(input: HandlerInput): Response {
     const session = sessionFor(input);
