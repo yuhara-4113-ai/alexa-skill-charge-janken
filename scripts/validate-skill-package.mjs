@@ -25,6 +25,6 @@ if (customApi?.locales !== undefined) {
 if (requiredIntents.some((intent) => !intentNames.has(intent))) {
   throw new Error('The interaction model is missing a required intent.');
 }
-if (intentSamples.some((sample) => /\S\{[^{}]+\}|\{[^{}]+\}\S/u.test(sample))) {
+if (intentSamples.some((sample) => /[^ ]\{[^{}]+\}|\{[^{}]+\}[^ ]/u.test(sample))) {
   throw new Error('Interaction model slots in sample utterances must be separated from surrounding text by spaces.');
 }
