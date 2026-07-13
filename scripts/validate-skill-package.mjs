@@ -6,6 +6,7 @@ const model = JSON.parse(await readFile(`${packageRoot}/interactionModels/custom
 const locale = manifest.manifest?.publishingInformation?.locales?.['ja-JP'];
 const customApi = manifest.manifest?.apis?.custom;
 const endpoint = manifest.manifest?.apis?.custom?.endpoint?.uri;
+const intentSamples = model.interactionModel?.languageModel?.intents?.flatMap((intent) => intent.samples ?? []) ?? [];
 const intentNames = new Set(model.interactionModel?.languageModel?.intents?.map((intent) => intent.name));
 const requiredIntents = [
   'ActionIntent', 'StartGameIntent', 'AMAZON.YesIntent', 'AMAZON.NoIntent',
@@ -23,4 +24,7 @@ if (customApi?.locales !== undefined) {
 }
 if (requiredIntents.some((intent) => !intentNames.has(intent))) {
   throw new Error('The interaction model is missing a required intent.');
+}
+if (intentSamples.some((sample) => /\S\{[^{}]+\}|\{[^{}]+\}\S/u.test(sample))) {
+  throw new Error('Interaction model slots in sample utterances must be separated from surrounding text by spaces.');
 }
