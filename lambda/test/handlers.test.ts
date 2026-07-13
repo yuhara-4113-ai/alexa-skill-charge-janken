@@ -55,6 +55,30 @@ function actionRequest(id: string): Record<string, unknown> {
   };
 }
 
+function rawActionRequest(value: string, resolutionCode = 'ER_SUCCESS_NO_MATCH'): Record<string, unknown> {
+  return {
+    type: 'IntentRequest',
+    dialogState: 'COMPLETED',
+    intent: {
+      name: 'ActionIntent',
+      confirmationStatus: 'NONE',
+      slots: {
+        action: {
+          name: 'action',
+          value,
+          confirmationStatus: 'NONE',
+          resolutions: {
+            resolutionsPerAuthority: [{
+              authority: 'amzn1.er-authority.echo-sdk.local.ACTION_TYPE',
+              status: { code: resolutionCode },
+            }],
+          },
+        },
+      },
+    },
+  };
+}
+
 function responseSpeech(response: { outputSpeech?: { type?: string; ssml?: string; text?: string } }): string {
   if (response.outputSpeech?.type === 'SSML') {
     return (response.outputSpeech.ssml ?? '').replace(/^<speak>|<\/speak>$/g, '');
@@ -107,7 +131,7 @@ describe('ASK handlers', () => {
     expect(speech).not.toContain('第');
   });
 
-  it('starts a replay with the first-round action choices', async () => {
+  it('starts a replay with a short action prompt and keeps the score', async () => {
     const state = {
       ...initialSession(),
       phase: 'AWAITING_REPLAY' as const,
@@ -119,13 +143,18 @@ describe('ASK handlers', () => {
       intent: { name: 'AMAZON.YesIntent', confirmationStatus: 'NONE', slots: {} },
     }, state));
 
-    expect(responseSpeech(response.response)).toBe('溜め、攻撃、ファイアー、ブラックホール、防御のどれかを言ってね。せーの。');
+    expect(responseSpeech(response.response)).toBe('せーの。');
     expect(response.sessionAttributes).toMatchObject({
       phase: 'AWAITING_ACTION',
       round: 1,
       playerWins: 1,
       alexaWins: 2,
     });
+  });
+
+  it('keeps the action choices on the initial launch', async () => {
+    const response = await createSkill(skillId).invoke(envelope({ type: 'LaunchRequest' }));
+    expect(responseSpeech(response.response)).toContain('溜め、攻撃、ファイアー、ブラックホール、防御');
   });
 
   it('starts with a fixed Alexa charge on the first round', () => {
@@ -190,6 +219,77 @@ describe('ASK handlers', () => {
     const blackhole = await createSkill(skillId).invoke(envelope(actionRequest('defend'), blackholeState));
     expect(responseSpeech(blackhole.response)).toBe('私はブラックホール。私の勝ち！ もう一回やる？');
     expect(blackhole.sessionAttributes).toMatchObject({ playerPower: 0, alexaPower: 0 });
+  });
+
+  it.each([
+    ['ファイア', 'fire'],
+    ['ファイヤ', 'fire'],
+    ['バリア', 'defend'],
+    ['バリアー', 'defend'],
+  ] as const)('uses the raw slot fallback for %s', async (value, action) => {
+    const state = {
+      ...initialSession(),
+      phase: 'AWAITING_ACTION' as const,
+      pendingAlexaAction: action === 'fire' ? 'charge' as const : 'attack' as const,
+      playerPower: action === 'fire' ? 2 : 0,
+      alexaPower: action === 'fire' ? 0 : 1,
+    };
+    const response = await createSkill(skillId).invoke(envelope(rawActionRequest(value), state));
+
+    expect(response.sessionAttributes).not.toEqual(state);
+    expect(responseSpeech(response.response)).toContain('私は');
+  });
+
+  it('prefers entity resolution over the raw slot value', async () => {
+    const state = {
+      ...initialSession(),
+      phase: 'AWAITING_ACTION' as const,
+      pendingAlexaAction: 'charge' as const,
+      playerPower: 1,
+    };
+    const request = actionRequest('attack');
+    const slot = (request.intent as { slots: Record<string, { value?: string }> }).slots.action;
+    slot.value = 'ファイア';
+    const response = await createSkill(skillId).invoke(envelope(request, state));
+
+    expect(responseSpeech(response.response)).toContain('あなたの勝ち');
+  });
+
+  it('does not guess an unknown raw slot value', async () => {
+    const state = {
+      ...initialSession(),
+      phase: 'AWAITING_ACTION' as const,
+      pendingAlexaAction: 'charge' as const,
+    };
+    const response = await createSkill(skillId).invoke(envelope(rawActionRequest('強い技'), state));
+
+    expect(response.sessionAttributes).toEqual(state);
+    expect(responseSpeech(response.response)).toContain('どれかを言ってね');
+  });
+
+  it.each([
+    ['ReplayYesIntent', 'せーの。'],
+    ['AMAZON.YesIntent', 'せーの。'],
+  ] as const)('starts a replay from %s', async (intentName, speech) => {
+    const state = { ...initialSession(), phase: 'AWAITING_REPLAY' as const, playerWins: 1, alexaWins: 2 };
+    const response = await createSkill(skillId).invoke(envelope({
+      type: 'IntentRequest',
+      intent: { name: intentName, confirmationStatus: 'NONE', slots: {} },
+    }, state));
+
+    expect(responseSpeech(response.response)).toBe(speech);
+    expect(response.sessionAttributes).toMatchObject({ phase: 'AWAITING_ACTION', round: 1, pendingAlexaAction: 'charge', playerWins: 1, alexaWins: 2 });
+  });
+
+  it.each(['ReplayNoIntent', 'AMAZON.NoIntent'] as const)('ends from replay with %s', async (intentName) => {
+    const state = { ...initialSession(), phase: 'AWAITING_REPLAY' as const, playerWins: 1, alexaWins: 2 };
+    const response = await createSkill(skillId).invoke(envelope({
+      type: 'IntentRequest',
+      intent: { name: intentName, confirmationStatus: 'NONE', slots: {} },
+    }, state));
+
+    expect(response.response.shouldEndSession).toBe(true);
+    expect(responseSpeech(response.response)).toContain('通算はあなた1勝、私2勝');
   });
 
   it('does not advance action intent outside the action phase', async () => {

@@ -38,18 +38,20 @@ Alexaは自分の行動を「チャージ」「ビーム」「ファイアー」
 
 - `ActionIntent` + `ACTION_TYPE`スロット（溜め・攻撃・ファイアー・ブラックホール・防御）
 - `StartGameIntent`（ゲーム開始）
-- `AMAZON.YesIntent` / `AMAZON.NoIntent`（ゲーム開始・再戦確認用）
+- `ReplayYesIntent` / `ReplayNoIntent` と `AMAZON.YesIntent` / `AMAZON.NoIntent`（ゲーム開始・再戦確認用）
 - `AMAZON.HelpIntent`
 - `AMAZON.FallbackIntent`
 - `AMAZON.StopIntent` / `AMAZON.CancelIntent`
 
 ### スロット・発話サンプル（案）
 
-- 溜め: 「ためる」「チャージ」「溜め」
+- 溜め: 「ためる」「ため」「チャージ」「溜め」
 - 攻撃: 「攻撃」「アタック」「ビーム」
 - ファイアー: 「ファイアー」「ファイヤー」「ファイア」「ファイヤ」
 - ブラックホール: 「ブラックホール」
-- 防御: 「防御」「ガード」「バリア」
+- 防御: 「防御」「ガード」「バリアー」「バリア」
+
+再戦確認では「はい」や「やる」で続け、「いいえ」や「やらない」で終了できます。再戦開始時は技の一覧を繰り返さず、「せーの。」だけを案内します。対話モデルで行動を解決できない場合も、上記の既知の別名だけをLambda側で補完し、未知の発話は推測で技に変換しません。
 
 ### セッション管理で保持する状態
 
