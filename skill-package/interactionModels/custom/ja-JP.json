@@ -51,6 +51,18 @@
               }
             },
             {
+              "id": "fire",
+              "name": {
+                "value": "ファイアー"
+              }
+            },
+            {
+              "id": "blackhole",
+              "name": {
+                "value": "ブラックホール"
+              }
+            },
+            {
               "id": "defend",
               "name": {
                 "value": "防御",

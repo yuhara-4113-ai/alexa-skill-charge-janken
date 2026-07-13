@@ -67,7 +67,7 @@ describe('ASK handlers', () => {
     const response = await createSkill(skillId).invoke(envelope({ type: 'LaunchRequest' }));
     const speech = responseSpeech(response.response);
 
-    expect(speech).toBe('チャージじゃんけんへようこそ。溜め、攻撃、防御のどれかを言ってね。せーの。');
+    expect(speech).toBe('チャージじゃんけんへようこそ。溜め、攻撃、ファイアー、ブラックホール、防御のどれかを言ってね。せーの。');
     expect(speech).not.toContain('準備');
     expect(speech).not.toContain('第');
     expect(response.sessionAttributes).toMatchObject({
@@ -89,7 +89,7 @@ describe('ASK handlers', () => {
     expect(speech).not.toContain('あなたは');
     expect(speech).not.toContain('引き分け');
     expect(speech).not.toContain('第');
-    expect(speech).not.toContain('溜め、攻撃、防御');
+    expect(speech).not.toContain('溜め、攻撃、ファイアー');
   });
 
   it('keeps Alexa hand, winner, and replay confirmation when the game ends', async () => {
@@ -119,7 +119,7 @@ describe('ASK handlers', () => {
       intent: { name: 'AMAZON.YesIntent', confirmationStatus: 'NONE', slots: {} },
     }, state));
 
-    expect(responseSpeech(response.response)).toBe('溜め、攻撃、防御のどれかを言ってね。せーの。');
+    expect(responseSpeech(response.response)).toBe('溜め、攻撃、ファイアー、ブラックホール、防御のどれかを言ってね。せーの。');
     expect(response.sessionAttributes).toMatchObject({
       phase: 'AWAITING_ACTION',
       round: 1,
@@ -147,6 +147,50 @@ describe('ASK handlers', () => {
     });
   });
 
+  it.each([
+    ['fire', 1, 'ファイアーにはパワーが2必要'],
+    ['blackhole', 2, 'ブラックホールにはパワーが3必要'],
+  ] as const)('keeps state when %s lacks power', async (action, playerPower, guidance) => {
+    const state = {
+      ...initialSession(),
+      phase: 'AWAITING_ACTION' as const,
+      pendingAlexaAction: 'blackhole' as const,
+      playerPower,
+      alexaPower: 3,
+      round: 4,
+    };
+    const response = await createSkill(skillId).invoke(envelope(actionRequest(action), state));
+
+    expect(responseSpeech(response.response)).toContain(guidance);
+    expect(response.sessionAttributes).toEqual(state);
+  });
+
+  it('resolves fire and blackhole actions and applies their outcomes', async () => {
+    const fireState = {
+      ...initialSession(),
+      phase: 'AWAITING_ACTION' as const,
+      pendingAlexaAction: 'attack' as const,
+      playerPower: 2,
+      alexaPower: 1,
+      round: 2,
+    };
+    const fire = await createSkill(skillId).invoke(envelope(actionRequest('fire'), fireState));
+    expect(responseSpeech(fire.response)).toBe('私は攻撃。あなたの勝ち！ もう一回やる？');
+    expect(fire.sessionAttributes).toMatchObject({ playerPower: 0, alexaPower: 0 });
+
+    const blackholeState = {
+      ...initialSession(),
+      phase: 'AWAITING_ACTION' as const,
+      pendingAlexaAction: 'blackhole' as const,
+      playerPower: 0,
+      alexaPower: 3,
+      round: 4,
+    };
+    const blackhole = await createSkill(skillId).invoke(envelope(actionRequest('defend'), blackholeState));
+    expect(responseSpeech(blackhole.response)).toBe('私はブラックホール。私の勝ち！ もう一回やる？');
+    expect(blackhole.sessionAttributes).toMatchObject({ playerPower: 0, alexaPower: 0 });
+  });
+
   it('does not advance action intent outside the action phase', async () => {
     const response = await createSkill(skillId).invoke(envelope(actionRequest('charge'), initialSession()));
     expect(responseSpeech(response.response)).toContain('はい');
@@ -160,6 +204,8 @@ describe('ASK handlers', () => {
       intent: { name: 'AMAZON.HelpIntent', confirmationStatus: 'NONE', slots: {} },
     }, state));
     expect(help.response.shouldEndSession).toBe(false);
+    expect(responseSpeech(help.response)).toContain('ファイアーは2、ブラックホールは3');
+    expect(responseSpeech(help.response)).toContain('ブラックホールは防御を貫通');
     expect(help.sessionAttributes).toMatchObject(state);
 
     const fallback = await createSkill(skillId).invoke(envelope({
