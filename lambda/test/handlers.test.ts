@@ -255,6 +255,19 @@ describe('ASK handlers', () => {
     expect(responseSpeech(response.response)).toContain('あなたの勝ち');
   });
 
+  it.each(['charge', 'attack', 'fire', 'blackhole', 'defend'])('accepts a raw Action ID: %s', async (value) => {
+    const state = {
+      ...initialSession(),
+      phase: 'AWAITING_ACTION' as const,
+      pendingAlexaAction: 'charge' as const,
+      playerPower: 3,
+    };
+    const response = await createSkill(skillId).invoke(envelope(rawActionRequest(value), state));
+
+    expect(response.sessionAttributes).not.toEqual(state);
+    expect(responseSpeech(response.response)).toContain('私は');
+  });
+
   it.each(['強い技', 'toString', 'constructor'])('does not guess an unknown raw slot value: %s', async (value) => {
     const state = {
       ...initialSession(),

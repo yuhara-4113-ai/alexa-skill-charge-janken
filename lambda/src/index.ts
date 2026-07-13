@@ -82,6 +82,8 @@ function resolvedAction(input: HandlerInput): Action | undefined {
   if (isAction(id)) return id;
 
   const rawValue = request.intent.slots?.action?.value?.replace(/\s/g, '');
+  if (isAction(rawValue)) return rawValue;
+
   const alias = rawValue ? actionAliases.get(rawValue) : undefined;
   return isAction(alias) ? alias : undefined;
 }
