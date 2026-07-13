@@ -28,24 +28,24 @@ const playerActionNames: Record<Action, string> = {
 const actionChoices = '溜め、攻撃、ファイアー、ブラックホール、防御';
 const actionPrompt = `${actionChoices}のどれかを言ってね。せーの。`;
 
-const actionAliases: Record<string, Action> = {
-  溜め: 'charge',
-  ため: 'charge',
-  ためる: 'charge',
-  チャージ: 'charge',
-  攻撃: 'attack',
-  アタック: 'attack',
-  ビーム: 'attack',
-  ファイアー: 'fire',
-  ファイア: 'fire',
-  ファイヤー: 'fire',
-  ファイヤ: 'fire',
-  ブラックホール: 'blackhole',
-  防御: 'defend',
-  ガード: 'defend',
-  バリアー: 'defend',
-  バリア: 'defend',
-};
+const actionAliases = new Map<string, Action>([
+  ['溜め', 'charge'],
+  ['ため', 'charge'],
+  ['ためる', 'charge'],
+  ['チャージ', 'charge'],
+  ['攻撃', 'attack'],
+  ['アタック', 'attack'],
+  ['ビーム', 'attack'],
+  ['ファイアー', 'fire'],
+  ['ファイア', 'fire'],
+  ['ファイヤー', 'fire'],
+  ['ファイヤ', 'fire'],
+  ['ブラックホール', 'blackhole'],
+  ['防御', 'defend'],
+  ['ガード', 'defend'],
+  ['バリアー', 'defend'],
+  ['バリア', 'defend'],
+]);
 
 function saveSession(input: HandlerInput, session: GameSession): void {
   input.attributesManager.setSessionAttributes(session);
@@ -82,7 +82,7 @@ function resolvedAction(input: HandlerInput): Action | undefined {
   if (isAction(id)) return id;
 
   const rawValue = request.intent.slots?.action?.value?.replace(/\s/g, '');
-  const alias = rawValue ? actionAliases[rawValue] : undefined;
+  const alias = rawValue ? actionAliases.get(rawValue) : undefined;
   return isAction(alias) ? alias : undefined;
 }
 
