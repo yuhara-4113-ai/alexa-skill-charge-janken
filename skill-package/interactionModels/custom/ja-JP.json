@@ -51,6 +51,19 @@
               }
             },
             {
+              "id": "fire",
+              "name": {
+                "value": "ファイアー",
+                "synonyms": ["ファイヤー", "ファイア", "ファイヤ"]
+              }
+            },
+            {
+              "id": "blackhole",
+              "name": {
+                "value": "ブラックホール"
+              }
+            },
+            {
               "id": "defend",
               "name": {
                 "value": "防御",

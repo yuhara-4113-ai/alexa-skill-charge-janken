@@ -1,4 +1,4 @@
-import { actions, type Action } from './game';
+import { actions, canUseAction, type Action } from './game';
 
 export type Phase = 'AWAITING_READY' | 'AWAITING_ACTION' | 'AWAITING_REPLAY';
 
@@ -59,7 +59,7 @@ export function isGameSession(value: unknown): value is GameSession {
 
   if (session.phase !== 'AWAITING_ACTION') return session.pendingAlexaAction === undefined;
   if (!isAction(session.pendingAlexaAction)) return false;
-  return session.pendingAlexaAction !== 'attack' || session.alexaPower >= 1;
+  return canUseAction(session.pendingAlexaAction, session.alexaPower);
 }
 
 export function readSession(attributes: unknown): GameSession {

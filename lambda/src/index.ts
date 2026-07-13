@@ -5,17 +5,28 @@ import {
   type HandlerInput,
 } from 'ask-sdk-core';
 import { type Response } from 'ask-sdk-model';
-import { type Action, playRound } from './game';
+import { actionCost, isAction, type Action, playRound } from './game';
 import { initialSession, readSession, resetForReplay, type GameSession } from './session';
 import { chooseAlexaAction, type Random } from './strategy';
 
 const actionNames: Record<Action, string> = {
+  charge: 'チャージ',
+  attack: 'ビーム',
+  fire: 'ファイアー',
+  blackhole: 'ブラックホール',
+  defend: 'バリアー',
+};
+
+const playerActionNames: Record<Action, string> = {
   charge: '溜め',
   attack: '攻撃',
+  fire: 'ファイアー',
+  blackhole: 'ブラックホール',
   defend: '防御',
 };
 
-const actionPrompt = '溜め、攻撃、防御のどれかを言ってね。せーの。';
+const actionChoices = '溜め、攻撃、ファイアー、ブラックホール、防御';
+const actionPrompt = `${actionChoices}のどれかを言ってね。せーの。`;
 
 function saveSession(input: HandlerInput, session: GameSession): void {
   input.attributesManager.setSessionAttributes(session);
@@ -49,7 +60,7 @@ function resolvedAction(input: HandlerInput): Action | undefined {
   const resolutions = request.intent.slots?.action?.resolutions?.resolutionsPerAuthority;
   const match = resolutions?.find((resolution) => resolution.status.code === 'ER_SUCCESS_MATCH');
   const id = match?.values?.[0]?.value.id;
-  return id === 'charge' || id === 'attack' || id === 'defend' ? id : undefined;
+  return isAction(id) ? id : undefined;
 }
 
 function sessionFor(input: HandlerInput): GameSession {
@@ -59,7 +70,7 @@ function sessionFor(input: HandlerInput): GameSession {
 function phaseGuidance(session: GameSession): string {
   if (session.phase === 'AWAITING_READY') return '準備ができたら、「はい」か「スタート」と言ってね。';
   if (session.phase === 'AWAITING_REPLAY') return 'もう一回なら「はい」、終わるなら「いいえ」と言ってね。';
-  return '溜め、攻撃、防御のどれかを言ってね。';
+  return `${actionChoices}のどれかを言ってね。`;
 }
 
 function startOrReplay(input: HandlerInput, session: GameSession): Response {
@@ -107,12 +118,16 @@ const ActionHandler = {
 
     const playerAction = resolvedAction(input);
     if (!playerAction) {
-      return ask(input, session, '溜め、攻撃、防御のどれかを言ってね。');
+      return ask(input, session, `${actionChoices}のどれかを言ってね。`);
     }
 
     const result = playRound(session, playerAction, session.pendingAlexaAction);
     if (!result.valid) {
-      return ask(input, session, 'パワーが足りないから攻撃はできないよ。溜めか防御を選んでね。');
+      return ask(
+        input,
+        session,
+        `${playerActionNames[playerAction]}にはパワーが${actionCost(playerAction)}必要だよ。別の技を選んでね。`,
+      );
     }
 
     const roundSpeech = `私は${actionNames[session.pendingAlexaAction]}。`;
@@ -166,8 +181,8 @@ const HelpHandler = {
   handle(input: HandlerInput): Response {
     const session = sessionFor(input);
     const explanation = session.phase === 'AWAITING_ACTION'
-      ? '溜めるとパワーが1増えるよ。パワーがあるときに攻撃できて、攻撃と溜めがぶつかると勝負が決まるよ。'
-      : '溜め、攻撃、防御で遊ぶゲームだよ。攻撃と溜めがぶつかると勝負が決まるよ。';
+      ? '溜めるとパワーが1増えるよ。攻撃はパワー1、ファイアーは2、ブラックホールは3を使うよ。強い攻撃が勝ち、防御は攻撃とファイアーを防ぐけど、ブラックホールは防御を貫通するよ。'
+      : '溜め、攻撃、ファイアー、ブラックホール、防御で遊ぶゲームだよ。強い攻撃ほど多くのパワーを使うよ。';
     return ask(input, session, `${explanation}${phaseGuidance(session)}`, phaseGuidance(session));
   },
 };

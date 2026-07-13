@@ -1,9 +1,9 @@
-import { type Action } from './game';
+import { actions, canUseAction, type Action } from './game';
 
 export type Random = () => number;
 
 export function legalAlexaActions(alexaPower: number): Action[] {
-  return alexaPower >= 1 ? ['charge', 'attack', 'defend'] : ['charge', 'defend'];
+  return actions.filter((action) => canUseAction(action, alexaPower));
 }
 export function chooseAlexaAction(alexaPower: number, random: Random = Math.random): Action {
   const legalActions = legalAlexaActions(alexaPower);
