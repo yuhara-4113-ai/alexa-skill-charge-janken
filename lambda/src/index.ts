@@ -69,7 +69,7 @@ function startOrReplay(input: HandlerInput, session: GameSession): Response {
     alexaWins: session.alexaWins,
   };
   const next = prepareActionRound(reset);
-  return ask(input, next, `第${next.round}ラウンド。${actionPrompt}`);
+  return ask(input, next, actionPrompt);
 }
 
 const LaunchRequestHandler = {
@@ -77,8 +77,8 @@ const LaunchRequestHandler = {
     return getRequestType(input.requestEnvelope) === 'LaunchRequest';
   },
   handle(input: HandlerInput): Response {
-    const session = initialSession();
-    return ask(input, session, 'チャージじゃんけんへようこそ。準備はいい？ 「はい」か「スタート」と言ってね。', '準備ができたら、「はい」と言ってね。');
+    const session = prepareActionRound(initialSession());
+    return ask(input, session, actionPrompt);
   },
 };
 
@@ -115,7 +115,7 @@ const ActionHandler = {
       return ask(input, session, 'パワーが足りないから攻撃はできないよ。溜めか防御を選んでね。');
     }
 
-    const roundSpeech = `あなたは${actionNames[playerAction]}。私は${actionNames[session.pendingAlexaAction]}。`;
+    const roundSpeech = `私は${actionNames[session.pendingAlexaAction]}。`;
     if (result.winner !== 'none') {
       const playerWon = result.winner === 'player';
       const next: GameSession = {
@@ -140,7 +140,7 @@ const ActionHandler = {
       round: session.round + 1,
       pendingAlexaAction: undefined,
     });
-    return ask(input, next, `${roundSpeech}引き分け。第${next.round}ラウンド。${actionPrompt}`);
+    return ask(input, next, `${roundSpeech}せーの。`);
   },
 };
 
