@@ -17,6 +17,14 @@ const actionNames: Record<Action, string> = {
   defend: 'バリアー',
 };
 
+const playerActionNames: Record<Action, string> = {
+  charge: '溜め',
+  attack: '攻撃',
+  fire: 'ファイアー',
+  blackhole: 'ブラックホール',
+  defend: '防御',
+};
+
 const actionChoices = '溜め、攻撃、ファイアー、ブラックホール、防御';
 const actionPrompt = `${actionChoices}のどれかを言ってね。せーの。`;
 
@@ -118,7 +126,7 @@ const ActionHandler = {
       return ask(
         input,
         session,
-        `${actionNames[playerAction]}にはパワーが${actionCost(playerAction)}必要だよ。別の技を選んでね。`,
+        `${playerActionNames[playerAction]}にはパワーが${actionCost(playerAction)}必要だよ。別の技を選んでね。`,
       );
     }
 

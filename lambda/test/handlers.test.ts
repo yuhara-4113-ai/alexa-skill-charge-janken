@@ -133,7 +133,7 @@ describe('ASK handlers', () => {
       .toBe('charge');
   });
 
-  it('keeps the hidden Alexa hand when player attack lacks power', async () => {
+  it('keeps the hidden Alexa hand and uses the player-facing name when attack lacks power', async () => {
     const state = {
       ...initialSession(),
       phase: 'AWAITING_ACTION' as const,
@@ -141,6 +141,7 @@ describe('ASK handlers', () => {
     };
     const response = await createSkill(skillId).invoke(envelope(actionRequest('attack'), state));
     expect(response.response.shouldEndSession).toBe(false);
+    expect(responseSpeech(response.response)).toContain('攻撃にはパワーが1必要');
     expect(response.sessionAttributes).toMatchObject({
       ...state,
       pendingAlexaAction: 'charge',
