@@ -56,11 +56,78 @@ function actionRequest(id: string): Record<string, unknown> {
 }
 
 function responseSpeech(response: { outputSpeech?: { type?: string; ssml?: string; text?: string } }): string {
-  if (response.outputSpeech?.type === 'SSML') return response.outputSpeech.ssml ?? '';
+  if (response.outputSpeech?.type === 'SSML') {
+    return (response.outputSpeech.ssml ?? '').replace(/^<speak>|<\/speak>$/g, '');
+  }
   return response.outputSpeech?.text ?? '';
 }
 
 describe('ASK handlers', () => {
+  it('starts the first action without a ready confirmation or round number', async () => {
+    const response = await createSkill(skillId).invoke(envelope({ type: 'LaunchRequest' }));
+    const speech = responseSpeech(response.response);
+
+    expect(speech).toBe('チャージじゃんけんへようこそ。溜め、攻撃、防御のどれかを言ってね。せーの。');
+    expect(speech).not.toContain('準備');
+    expect(speech).not.toContain('第');
+    expect(response.sessionAttributes).toMatchObject({
+      phase: 'AWAITING_ACTION',
+      pendingAlexaAction: 'charge',
+    });
+  });
+
+  it('keeps only Alexa hand and moves directly to the next round on a tie', async () => {
+    const state = {
+      ...initialSession(),
+      phase: 'AWAITING_ACTION' as const,
+      pendingAlexaAction: 'defend' as const,
+    };
+    const response = await createSkill(skillId).invoke(envelope(actionRequest('defend'), state));
+    const speech = responseSpeech(response.response);
+
+    expect(speech).toBe('私は防御。せーの。');
+    expect(speech).not.toContain('あなたは');
+    expect(speech).not.toContain('引き分け');
+    expect(speech).not.toContain('第');
+    expect(speech).not.toContain('溜め、攻撃、防御');
+  });
+
+  it('keeps Alexa hand, winner, and replay confirmation when the game ends', async () => {
+    const state = {
+      ...initialSession(),
+      phase: 'AWAITING_ACTION' as const,
+      pendingAlexaAction: 'charge' as const,
+      playerPower: 1,
+    };
+    const response = await createSkill(skillId).invoke(envelope(actionRequest('attack'), state));
+    const speech = responseSpeech(response.response);
+
+    expect(speech).toBe('私は溜め。あなたの勝ち！ もう一回やる？');
+    expect(speech).not.toContain('あなたは');
+    expect(speech).not.toContain('第');
+  });
+
+  it('starts a replay with the first-round action choices', async () => {
+    const state = {
+      ...initialSession(),
+      phase: 'AWAITING_REPLAY' as const,
+      playerWins: 1,
+      alexaWins: 2,
+    };
+    const response = await createSkill(skillId).invoke(envelope({
+      type: 'IntentRequest',
+      intent: { name: 'AMAZON.YesIntent', confirmationStatus: 'NONE', slots: {} },
+    }, state));
+
+    expect(responseSpeech(response.response)).toBe('溜め、攻撃、防御のどれかを言ってね。せーの。');
+    expect(response.sessionAttributes).toMatchObject({
+      phase: 'AWAITING_ACTION',
+      round: 1,
+      playerWins: 1,
+      alexaWins: 2,
+    });
+  });
+
   it('starts with a fixed Alexa charge on the first round', () => {
     expect(prepareActionRound({ ...initialSession(), phase: 'AWAITING_ACTION' }, () => 0.99).pendingAlexaAction)
       .toBe('charge');
