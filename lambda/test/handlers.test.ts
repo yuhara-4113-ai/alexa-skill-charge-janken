@@ -67,7 +67,7 @@ describe('ASK handlers', () => {
     const response = await createSkill(skillId).invoke(envelope({ type: 'LaunchRequest' }));
     const speech = responseSpeech(response.response);
 
-    expect(speech).toBe('せーの。溜め、攻撃、防御のどれかを言ってね。');
+    expect(speech).toBe('チャージじゃんけんへようこそ。溜め、攻撃、防御のどれかを言ってね。せーの。');
     expect(speech).not.toContain('準備');
     expect(speech).not.toContain('第');
     expect(response.sessionAttributes).toMatchObject({
@@ -119,7 +119,7 @@ describe('ASK handlers', () => {
       intent: { name: 'AMAZON.YesIntent', confirmationStatus: 'NONE', slots: {} },
     }, state));
 
-    expect(responseSpeech(response.response)).toBe('せーの。溜め、攻撃、防御のどれかを言ってね。');
+    expect(responseSpeech(response.response)).toBe('溜め、攻撃、防御のどれかを言ってね。せーの。');
     expect(response.sessionAttributes).toMatchObject({
       phase: 'AWAITING_ACTION',
       round: 1,

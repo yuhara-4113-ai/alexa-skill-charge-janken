@@ -15,7 +15,7 @@ const actionNames: Record<Action, string> = {
   defend: '防御',
 };
 
-const actionPrompt = 'せーの。溜め、攻撃、防御のどれかを言ってね。';
+const actionPrompt = '溜め、攻撃、防御のどれかを言ってね。せーの。';
 
 function saveSession(input: HandlerInput, session: GameSession): void {
   input.attributesManager.setSessionAttributes(session);
@@ -78,7 +78,7 @@ const LaunchRequestHandler = {
   },
   handle(input: HandlerInput): Response {
     const session = prepareActionRound(initialSession());
-    return ask(input, session, actionPrompt);
+    return ask(input, session, `チャージじゃんけんへようこそ。${actionPrompt}`);
   },
 };
 
