@@ -5,7 +5,7 @@ import {
   type HandlerInput,
 } from 'ask-sdk-core';
 import { type Response } from 'ask-sdk-model';
-import { actionCost, actions, type Action, playRound } from './game';
+import { actionCost, isAction, type Action, playRound } from './game';
 import { initialSession, readSession, resetForReplay, type GameSession } from './session';
 import { chooseAlexaAction, type Random } from './strategy';
 
@@ -60,7 +60,7 @@ function resolvedAction(input: HandlerInput): Action | undefined {
   const resolutions = request.intent.slots?.action?.resolutions?.resolutionsPerAuthority;
   const match = resolutions?.find((resolution) => resolution.status.code === 'ER_SUCCESS_MATCH');
   const id = match?.values?.[0]?.value.id;
-  return typeof id === 'string' && (actions as readonly string[]).includes(id) ? id as Action : undefined;
+  return isAction(id) ? id : undefined;
 }
 
 function sessionFor(input: HandlerInput): GameSession {

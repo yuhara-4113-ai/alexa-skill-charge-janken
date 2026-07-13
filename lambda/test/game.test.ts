@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { actionCost, actions, canUseAction, decideWinner, playRound, type Winner } from '../src/game';
+import { actionCost, actions, canUseAction, decideWinner, isAction, playRound, type Winner } from '../src/game';
 import { initialSession, isGameSession, resetForReplay } from '../src/session';
 import { chooseAlexaAction, legalAlexaActions } from '../src/strategy';
 
@@ -11,6 +11,12 @@ describe('game rules', () => {
     ['player', 'player', 'player', 'none', 'player'],
     ['none', 'none', 'none', 'alexa', 'none'],
   ];
+
+  it('recognizes only supported actions', () => {
+    expect(actions.every(isAction)).toBe(true);
+    expect(isAction('unknown')).toBe(false);
+    expect(isAction(undefined)).toBe(false);
+  });
 
   it.each(actions.flatMap((player, playerIndex) => actions.map((alexa, alexaIndex) => ({
     player,

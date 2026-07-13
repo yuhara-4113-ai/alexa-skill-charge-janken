@@ -3,6 +3,10 @@ export const actions = ['charge', 'attack', 'fire', 'blackhole', 'defend'] as co
 export type Action = (typeof actions)[number];
 export type Winner = 'player' | 'alexa' | 'none';
 
+export function isAction(value: unknown): value is Action {
+  return typeof value === 'string' && (actions as readonly string[]).includes(value);
+}
+
 export type Powers = {
   playerPower: number;
   alexaPower: number;
