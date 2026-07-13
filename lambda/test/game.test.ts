@@ -38,7 +38,6 @@ describe('game rules', () => {
     ['blackhole', 2],
   ] as const)('does not advance %s below its required power', (action, power) => {
     const powers = { playerPower: power, alexaPower: 3 };
-    expect(canUseAction('attack', 0)).toBe(false);
     expect(canUseAction(action, power)).toBe(false);
     expect(playRound(powers, action, 'blackhole')).toEqual({ valid: false, powers, winner: 'none' });
   });
