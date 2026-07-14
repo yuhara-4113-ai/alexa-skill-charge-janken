@@ -14,18 +14,10 @@ const actionNames: Record<Action, string> = {
   attack: 'ビーム',
   fire: 'ファイアー',
   blackhole: 'ブラックホール',
-  defend: 'バリアー',
+  defend: 'ガード',
 };
 
-const playerActionNames: Record<Action, string> = {
-  charge: '溜め',
-  attack: '攻撃',
-  fire: 'ファイアー',
-  blackhole: 'ブラックホール',
-  defend: '防御',
-};
-
-const actionChoices = '溜め、攻撃、ファイアー、ブラックホール、防御';
+const actionChoices = 'チャージ、ビーム、ファイアー、ブラックホール、ガード';
 const actionPrompt = `${actionChoices}のどれかを言ってね。せーの。`;
 
 const actionAliases = new Map<string, Action>([
@@ -36,6 +28,7 @@ const actionAliases = new Map<string, Action>([
   ['攻撃', 'attack'],
   ['アタック', 'attack'],
   ['ビーム', 'attack'],
+  ['ビーモ', 'attack'],
   ['ファイアー', 'fire'],
   ['ファイア', 'fire'],
   ['ファイヤー', 'fire'],
@@ -46,6 +39,12 @@ const actionAliases = new Map<string, Action>([
   ['バリアー', 'defend'],
   ['バリア', 'defend'],
 ]);
+
+const actionPrefixAliases: ReadonlyArray<readonly [RegExp, Action]> = [
+  [/^(?:チャー|ちゃー)/u, 'charge'],
+  [/^(?:ビー|びー)/u, 'attack'],
+  [/^(?:ガー|がー)/u, 'defend'],
+];
 
 function saveSession(input: HandlerInput, session: GameSession): void {
   input.attributesManager.setSessionAttributes(session);
@@ -84,7 +83,8 @@ function resolvedAction(input: HandlerInput): Action | undefined {
   const rawValue = request.intent.slots?.action?.value?.replace(/\s/g, '')?.toLowerCase();
   if (isAction(rawValue)) return rawValue;
 
-  return rawValue ? actionAliases.get(rawValue) : undefined;
+  if (!rawValue) return undefined;
+  return actionAliases.get(rawValue) ?? actionPrefixAliases.find(([pattern]) => pattern.test(rawValue))?.[1];
 }
 
 function sessionFor(input: HandlerInput): GameSession {
@@ -150,7 +150,7 @@ const ActionHandler = {
       return ask(
         input,
         session,
-        `${playerActionNames[playerAction]}にはパワーが${actionCost(playerAction)}必要だよ。別の技を選んでね。`,
+        `${actionNames[playerAction]}にはパワーが${actionCost(playerAction)}必要だよ。別の技を選んでね。`,
       );
     }
 
@@ -207,8 +207,8 @@ const HelpHandler = {
   handle(input: HandlerInput): Response {
     const session = sessionFor(input);
     const explanation = session.phase === 'AWAITING_ACTION'
-      ? '溜めるとパワーが1増えるよ。攻撃はパワー1、ファイアーは2、ブラックホールは3を使うよ。強い攻撃が勝ち、防御は攻撃とファイアーを防ぐけど、ブラックホールは防御を貫通するよ。'
-      : '溜め、攻撃、ファイアー、ブラックホール、防御で遊ぶゲームだよ。強い攻撃ほど多くのパワーを使うよ。';
+      ? 'チャージするとパワーが1増えるよ。ビームはパワー1、ファイアーは2、ブラックホールは3を使うよ。強い技が勝ち、ガードはビームとファイアーを防ぐけど、ブラックホールはガードを貫通するよ。'
+      : 'チャージ、ビーム、ファイアー、ブラックホール、ガードで遊ぶゲームだよ。強い技ほど多くのパワーを使うよ。';
     return ask(input, session, `${explanation}${phaseGuidance(session)}`, phaseGuidance(session));
   },
 };

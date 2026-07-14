@@ -14,9 +14,12 @@
           "samples": [
             "{action}",
             "私は {action}",
+            "{action} で",
             "{action} にする",
             "{action} を使う",
-            "{action} する"
+            "{action} する",
+            "{action} を出す",
+            "{action} でいく"
           ]
         },
         {
@@ -49,15 +52,15 @@
             {
               "id": "charge",
               "name": {
-                "value": "溜め",
-                "synonyms": ["ためる", "ため", "チャージ"]
+                "value": "チャージ",
+                "synonyms": ["溜め", "ためる", "ため"]
               }
             },
             {
               "id": "attack",
               "name": {
-                "value": "攻撃",
-                "synonyms": ["アタック", "ビーム"]
+                "value": "ビーム",
+                "synonyms": ["攻撃", "アタック", "ビーモ"]
               }
             },
             {
@@ -76,8 +79,8 @@
             {
               "id": "defend",
               "name": {
-                "value": "防御",
-                "synonyms": ["ガード", "バリアー", "バリア"]
+                "value": "ガード",
+                "synonyms": ["防御", "バリアー", "バリア"]
               }
             }
           ]
