@@ -28,6 +28,7 @@ const actionAliases = new Map<string, Action>([
   ['攻撃', 'attack'],
   ['アタック', 'attack'],
   ['ビーム', 'attack'],
+  ['ビーモ', 'attack'],
   ['ファイアー', 'fire'],
   ['ファイア', 'fire'],
   ['ファイヤー', 'fire'],

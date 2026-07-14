@@ -226,12 +226,13 @@ describe('ASK handlers', () => {
     ['ファイヤ', 'fire'],
     ['バリア', 'defend'],
     ['バリアー', 'defend'],
+    ['ビーモ', 'attack'],
   ] as const)('uses the raw slot fallback for %s', async (value, action) => {
     const state = {
       ...initialSession(),
       phase: 'AWAITING_ACTION' as const,
       pendingAlexaAction: action === 'fire' ? 'charge' as const : 'attack' as const,
-      playerPower: action === 'fire' ? 2 : 0,
+      playerPower: action === 'fire' ? 2 : action === 'attack' ? 1 : 0,
       alexaPower: action === 'fire' ? 0 : 1,
     };
     const response = await createSkill(skillId).invoke(envelope(rawActionRequest(value), state));
