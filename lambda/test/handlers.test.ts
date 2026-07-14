@@ -91,7 +91,7 @@ describe('ASK handlers', () => {
     const response = await createSkill(skillId).invoke(envelope({ type: 'LaunchRequest' }));
     const speech = responseSpeech(response.response);
 
-    expect(speech).toBe('チャージじゃんけんへようこそ。溜め、攻撃、ファイアー、ブラックホール、防御のどれかを言ってね。せーの。');
+    expect(speech).toBe('チャージじゃんけんへようこそ。チャージ、ビーム、ファイアー、ブラックホール、ガードのどれかを言ってね。せーの。');
     expect(speech).not.toContain('準備');
     expect(speech).not.toContain('第');
     expect(response.sessionAttributes).toMatchObject({
@@ -109,11 +109,11 @@ describe('ASK handlers', () => {
     const response = await createSkill(skillId).invoke(envelope(actionRequest('defend'), state));
     const speech = responseSpeech(response.response);
 
-    expect(speech).toBe('私はバリアー。せーの。');
+    expect(speech).toBe('私はガード。せーの。');
     expect(speech).not.toContain('あなたは');
     expect(speech).not.toContain('引き分け');
     expect(speech).not.toContain('第');
-    expect(speech).not.toContain('溜め、攻撃、ファイアー');
+    expect(speech).not.toContain('チャージ、ビーム、ファイアー');
   });
 
   it('keeps Alexa hand, winner, and replay confirmation when the game ends', async () => {
@@ -154,7 +154,7 @@ describe('ASK handlers', () => {
 
   it('keeps the action choices on the initial launch', async () => {
     const response = await createSkill(skillId).invoke(envelope({ type: 'LaunchRequest' }));
-    expect(responseSpeech(response.response)).toContain('溜め、攻撃、ファイアー、ブラックホール、防御');
+    expect(responseSpeech(response.response)).toContain('チャージ、ビーム、ファイアー、ブラックホール、ガード');
   });
 
   it('starts with a fixed Alexa charge on the first round', () => {
@@ -170,7 +170,7 @@ describe('ASK handlers', () => {
     };
     const response = await createSkill(skillId).invoke(envelope(actionRequest('attack'), state));
     expect(response.response.shouldEndSession).toBe(false);
-    expect(responseSpeech(response.response)).toContain('攻撃にはパワーが1必要');
+    expect(responseSpeech(response.response)).toContain('ビームにはパワーが1必要');
     expect(response.sessionAttributes).toMatchObject({
       ...state,
       pendingAlexaAction: 'charge',
@@ -240,6 +240,28 @@ describe('ASK handlers', () => {
     expect(responseSpeech(response.response)).toContain('私は');
   });
 
+  it.each([
+    ['チャーハン', 'charge', 'attack', 0, '私はビーム。私の勝ち！ もう一回やる？'],
+    ['チャート', 'charge', 'attack', 0, '私はビーム。私の勝ち！ もう一回やる？'],
+    ['チャー', 'charge', 'attack', 0, '私はビーム。私の勝ち！ もう一回やる？'],
+    ['ビーモ', 'attack', 'charge', 1, '私はチャージ。あなたの勝ち！ もう一回やる？'],
+    ['ビール', 'attack', 'charge', 1, '私はチャージ。あなたの勝ち！ もう一回やる？'],
+    ['ビー', 'attack', 'charge', 1, '私はチャージ。あなたの勝ち！ もう一回やる？'],
+    ['ガードー', 'defend', 'attack', 0, '私はビーム。せーの。'],
+    ['ガー', 'defend', 'attack', 0, '私はビーム。せーの。'],
+  ] as const)('uses the %s prefix fallback as %s', async (value, action, pendingAlexaAction, playerPower, expectedSpeech) => {
+    const state = {
+      ...initialSession(),
+      phase: 'AWAITING_ACTION' as const,
+      pendingAlexaAction,
+      playerPower,
+      alexaPower: pendingAlexaAction === 'attack' ? 1 : 0,
+    };
+    const response = await createSkill(skillId).invoke(envelope(rawActionRequest(value), state));
+
+    expect(responseSpeech(response.response)).toBe(expectedSpeech);
+  });
+
   it('prefers entity resolution over the raw slot value', async () => {
     const state = {
       ...initialSession(),
@@ -268,7 +290,7 @@ describe('ASK handlers', () => {
     expect(responseSpeech(response.response)).toContain('私は');
   });
 
-  it.each(['強い技', 'toString', 'constructor'])('does not guess an unknown raw slot value: %s', async (value) => {
+  it.each(['強い技', 'ファンタジー', 'ブラボー', 'toString', 'constructor'])('does not guess an unknown raw slot value: %s', async (value) => {
     const state = {
       ...initialSession(),
       phase: 'AWAITING_ACTION' as const,
@@ -319,7 +341,7 @@ describe('ASK handlers', () => {
     }, state));
     expect(help.response.shouldEndSession).toBe(false);
     expect(responseSpeech(help.response)).toContain('ファイアーは2、ブラックホールは3');
-    expect(responseSpeech(help.response)).toContain('ブラックホールは防御を貫通');
+    expect(responseSpeech(help.response)).toContain('ブラックホールはガードを貫通');
     expect(help.sessionAttributes).toMatchObject(state);
 
     const fallback = await createSkill(skillId).invoke(envelope({
