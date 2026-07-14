@@ -41,9 +41,9 @@ const actionAliases = new Map<string, Action>([
 ]);
 
 const actionPrefixAliases: ReadonlyArray<readonly [RegExp, Action]> = [
-  [/^チャー/u, 'charge'],
-  [/^ビー/u, 'attack'],
-  [/^ガー/u, 'defend'],
+  [/^(?:チャー|ちゃー)/u, 'charge'],
+  [/^(?:ビー|びー)/u, 'attack'],
+  [/^(?:ガー|がー)/u, 'defend'],
 ];
 
 function saveSession(input: HandlerInput, session: GameSession): void {

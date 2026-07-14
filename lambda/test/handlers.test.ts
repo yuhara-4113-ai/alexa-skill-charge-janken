@@ -243,12 +243,15 @@ describe('ASK handlers', () => {
 
   it.each([
     ['チャーハン', 'charge', 'attack', 0, '私はビーム。私の勝ち！ もう一回やる？'],
+    ['ちゃーはん', 'charge', 'attack', 0, '私はビーム。私の勝ち！ もう一回やる？'],
     ['チャート', 'charge', 'attack', 0, '私はビーム。私の勝ち！ もう一回やる？'],
     ['チャー', 'charge', 'attack', 0, '私はビーム。私の勝ち！ もう一回やる？'],
     ['ビーモ', 'attack', 'charge', 1, '私はチャージ。あなたの勝ち！ もう一回やる？'],
     ['ビール', 'attack', 'charge', 1, '私はチャージ。あなたの勝ち！ もう一回やる？'],
+    ['びーる', 'attack', 'charge', 1, '私はチャージ。あなたの勝ち！ もう一回やる？'],
     ['ビー', 'attack', 'charge', 1, '私はチャージ。あなたの勝ち！ もう一回やる？'],
     ['ガードー', 'defend', 'attack', 0, '私はビーム。せーの。'],
+    ['がーどー', 'defend', 'attack', 0, '私はビーム。せーの。'],
     ['ガー', 'defend', 'attack', 0, '私はビーム。せーの。'],
   ] as const)('uses the %s prefix fallback as %s', async (value, action, pendingAlexaAction, playerPower, expectedSpeech) => {
     const state = {
