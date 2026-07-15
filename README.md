@@ -2,7 +2,7 @@
 
 子供の伝統的な手遊び「CCレモンゲーム」「バトルじゃんけん」をモチーフにした、Alexaスキル（音声対戦ゲーム）です。
 
-MVPのコードとCI/CD定義は実装済みです。確定した技術方針、MVP仕様、CI/CDの判断基準は[実装引き継ぎ](docs/implementation-handoff.md)にまとめています。development環境へのAWS Lambda・Alexa対話モデルのデプロイは確認済みで、Echo実機テストは未完了です。
+MVPのコードとCI/CD定義は実装済みです。development環境へのAWS Lambda・Alexa対話モデルのデプロイとEcho実機テストを確認済みです。
 
 ## ゲームルール
 
@@ -85,7 +85,7 @@ Alexaは自分の行動を「チャージ」「ビーム」「ファイアー」
 
 ## セットアップ
 
-実装の判断基準は[実装引き継ぎ](docs/implementation-handoff.md)です。AWS/Alexaの認証情報をこのリポジトリへ保存せず、development環境だけをGitHub Actionsから更新します。Alexa Storeへの公開は行いません。
+AWS/Alexaの認証情報をこのリポジトリへ保存せず、development環境だけをGitHub Actionsから更新します。Alexa Storeへの公開は行いません。
 
 ### 開発・GitHub操作の方針
 
