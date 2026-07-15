@@ -25,8 +25,7 @@
             "ガード"
           ],
           "smallIconUri": "file://assets/images/charge-janken-108.png",
-          "largeIconUri": "file://assets/images/charge-janken-512.png",
-          "privacyPolicyUrl": "https://github.com/yuhara-4113-ai/alexa-skill-charge-janken/blob/main/docs/privacy-policy.md"
+          "largeIconUri": "file://assets/images/charge-janken-512.png"
         }
       },
       "isAvailableWorldwide": false,
@@ -40,7 +39,12 @@
       "usesPersonalInfo": false,
       "isChildDirected": false,
       "isExportCompliant": true,
-      "containsAds": false
+      "containsAds": false,
+      "locales": {
+        "ja-JP": {
+          "privacyPolicyUrl": "https://github.com/yuhara-4113-ai/alexa-skill-charge-janken/blob/main/docs/privacy-policy.md"
+        }
+      }
     },
     "apis": {
       "custom": {

@@ -25,7 +25,7 @@ if (!manifest.manifest?.manifestVersion || !locale?.name || !locale?.summary || 
 if (!Array.isArray(locale.keywords) || locale.keywords.length === 0) {
   throw new Error('skill.json is missing ja-JP publishing keywords.');
 }
-if (!locale.privacyPolicyUrl?.startsWith('https://')) {
+if (!privacyAndCompliance?.locales?.['ja-JP']?.privacyPolicyUrl?.startsWith('https://')) {
   throw new Error('skill.json must contain an HTTPS privacy policy URL.');
 }
 if (
