@@ -230,7 +230,7 @@ const FallbackHandler = {
   },
   handle(input: HandlerInput): Response {
     const session = sessionFor(input);
-    return ask(input, session, 'もう一回お願いします', 'もう一回お願いします');
+    return ask(input, session, 'もう一回お願いします', phaseGuidance(session));
   },
 };
 
