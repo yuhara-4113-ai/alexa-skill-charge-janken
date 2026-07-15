@@ -27,8 +27,9 @@ if (customApi?.locales !== undefined) {
 if (requiredIntents.some((intent) => !intentNames.has(intent))) {
   throw new Error('The interaction model is missing a required intent.');
 }
-if (requiredStartGameSamples.some((sample) => !startGameIntent?.samples?.includes(sample))) {
-  throw new Error('StartGameIntent is missing a natural invocation sample.');
+const missingStartGameSamples = requiredStartGameSamples.filter((sample) => !startGameIntent?.samples?.includes(sample));
+if (missingStartGameSamples.length > 0) {
+  throw new Error(`StartGameIntent is missing natural invocation samples: ${missingStartGameSamples.join(', ')}`);
 }
 if (intentSamples.some((sample) => /[^ ]\{[^{}]+\}|\{[^{}]+\}[^ ]/u.test(sample))) {
   throw new Error('Interaction model slots in sample utterances must be separated from surrounding text by spaces.');
