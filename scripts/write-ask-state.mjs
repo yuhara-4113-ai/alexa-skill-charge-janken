@@ -13,12 +13,15 @@ if (!refreshToken || !vendorId) {
   throw new Error('ASK_REFRESH_TOKEN and ASK_VENDOR_ID are required only for ASK CLI configuration.');
 }
 
-const askDirectory = join(homedir(), '.ask');
-await mkdir(askDirectory, { recursive: true });
-await writeFile(join(askDirectory, 'ask-states.json'), `${JSON.stringify({
+const projectAskDirectory = join(process.cwd(), '.ask');
+await mkdir(projectAskDirectory, { recursive: true });
+await writeFile(join(projectAskDirectory, 'ask-states.json'), `${JSON.stringify({
   profiles: { default: { skillId } },
 }, null, 2)}\n`);
-await writeFile(join(askDirectory, 'cli_config'), `${JSON.stringify({
+
+const userAskDirectory = join(homedir(), '.ask');
+await mkdir(userAskDirectory, { recursive: true });
+await writeFile(join(userAskDirectory, 'cli_config'), `${JSON.stringify({
   profiles: {
     default: {
       vendor_id: vendorId,

@@ -77,7 +77,9 @@ Alexaは自分の行動を「チャージ」「ビーム」「ファイアー」
 - `lambda/test/` — ゲームロジック・ハンドラーのユニットテスト
 - `lambda/package.json` — ASK SDKと開発ツールの依存関係
 - `config/deployment.json` — デプロイ先Skill IDの非機密な正本
-- `skill-package/` — 対話モデル・スキルマニフェスト
+- `skill-package/` — 対話モデル・スキルマニフェスト・Storeアイコン
+- `docs/store-publication.md` — Store掲載内容、Privacy & Compliance、認定・公開手順
+- `docs/privacy-policy.md` — 公開用プライバシーポリシー
 - `infrastructure/bootstrap.yaml` — GitHub OIDCとデプロイロールの初回構築
 - `.github/workflows/` — CI/CDパイプライン定義
 - `template.yaml` — AWS SAMテンプレート
@@ -85,7 +87,7 @@ Alexaは自分の行動を「チャージ」「ビーム」「ファイアー」
 
 ## セットアップ
 
-AWS/Alexaの認証情報をこのリポジトリへ保存せず、development環境だけをGitHub Actionsから更新します。Alexa Storeへの公開は行いません。
+AWS/Alexaの認証情報をこのリポジトリへ保存せず、通常のデプロイはdevelopment環境だけをGitHub Actionsから更新します。Store公開はdevelopment版の検証・認定を経て行い、通常のデプロイと分離します。公開前の確認項目と手順は[`docs/store-publication.md`](docs/store-publication.md)を参照してください。
 
 ### 開発・GitHub操作の方針
 
@@ -167,7 +169,9 @@ gh run list --workflow deploy.yml --branch codex/<ブランチ名> --limit 1
 gh run watch <run-id> --exit-status
 ```
 
-作業ブランチとmainは同じdevelopment stackとAlexa development stageを更新するため、同時実行は `concurrency` で直列化します。成功したLambda ARNだけを使い、ASK CLIのSMAPIコマンドでマニフェストと対話モデルを個別に更新します。live環境やStore公開は更新しません。
+作業ブランチとmainは同じdevelopment stackとAlexa development stageを更新するため、同時実行は `concurrency` で直列化します。成功したLambda ARNだけを使い、ASK CLIの`skill-metadata`限定デプロイでマニフェスト・対話モデル・Store画像をまとめて更新します。LambdaとCloudFormationはSAMだけが管理し、このワークフローはlive環境やStore公開を更新しません。
+
+Store認定と公開は手動の`Store release`ワークフローへ分離しています。認定提出は`SUBMIT`、認定済み版の公開は`PUBLISH`の確認文字列を要求し、`main`からしか実行できません。認定提出は常に`MANUAL_PUBLISHING`を使うため、認定後に公開日時を別途決定できます。実行前に[`docs/store-publication.md`](docs/store-publication.md)の実機テストと最終確認を完了してください。
 
 初回作成に失敗したapplication stackが `ROLLBACK_COMPLETE` の場合、そのstackは更新できません。原因を修正したことを確認してから、AWS ConsoleまたはCloudShellで対象stackを一度だけ手動削除してください。GitHub Actionsにはstack削除権限を持たせません。
 
