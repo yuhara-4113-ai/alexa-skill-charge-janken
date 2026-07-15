@@ -157,6 +157,21 @@ describe('ASK handlers', () => {
     expect(responseSpeech(response.response)).toContain('チャージ、ビーム、ファイアー、ブラックホール、ガード');
   });
 
+  it('starts the same first action round from StartGameIntent', async () => {
+    const response = await createSkill(skillId).invoke(envelope({
+      type: 'IntentRequest',
+      intent: { name: 'StartGameIntent', confirmationStatus: 'NONE', slots: {} },
+    }));
+
+    expect(responseSpeech(response.response)).toBe('チャージ、ビーム、ファイアー、ブラックホール、ガードのどれかを言ってね。せーの。');
+    expect(response.response.shouldEndSession).toBe(false);
+    expect(response.sessionAttributes).toMatchObject({
+      phase: 'AWAITING_ACTION',
+      round: 1,
+      pendingAlexaAction: 'charge',
+    });
+  });
+
   it('starts with a fixed Alexa charge on the first round', () => {
     expect(prepareActionRound({ ...initialSession(), phase: 'AWAITING_ACTION' }, () => 0.99).pendingAlexaAction)
       .toBe('charge');

@@ -8,9 +8,13 @@ const customApi = manifest.manifest?.apis?.custom;
 const endpoint = manifest.manifest?.apis?.custom?.endpoint?.uri;
 const intentSamples = model.interactionModel?.languageModel?.intents?.flatMap((intent) => intent.samples ?? []) ?? [];
 const intentNames = new Set(model.interactionModel?.languageModel?.intents?.map((intent) => intent.name));
+const startGameIntent = model.interactionModel?.languageModel?.intents?.find((intent) => intent.name === 'StartGameIntent');
 const requiredIntents = [
   'ActionIntent', 'StartGameIntent', 'AMAZON.YesIntent', 'AMAZON.NoIntent',
   'AMAZON.HelpIntent', 'AMAZON.FallbackIntent', 'AMAZON.StopIntent', 'AMAZON.CancelIntent',
+];
+const requiredStartGameSamples = [
+  'しよう', '勝負', '勝負する', '遊ぶ', '対戦', '遊ぼう', '勝負しよう', '対戦しよう',
 ];
 
 if (!manifest.manifest?.manifestVersion || !locale?.name || !locale?.summary || !locale?.description || locale.examplePhrases?.length !== 3) {
@@ -24,6 +28,10 @@ if (customApi?.locales !== undefined) {
 }
 if (requiredIntents.some((intent) => !intentNames.has(intent))) {
   throw new Error('The interaction model is missing a required intent.');
+}
+const missingStartGameSamples = requiredStartGameSamples.filter((sample) => !startGameIntent?.samples?.includes(sample));
+if (missingStartGameSamples.length > 0) {
+  throw new Error(`StartGameIntent is missing natural invocation samples: ${missingStartGameSamples.join(', ')}`);
 }
 if (intentSamples.some((sample) => /[^ ]\{[^{}]+\}|\{[^{}]+\}[^ ]/u.test(sample))) {
   throw new Error('Interaction model slots in sample utterances must be separated from surrounding text by spaces.');
