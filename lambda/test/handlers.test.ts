@@ -353,6 +353,9 @@ describe('ASK handlers', () => {
       intent: { name: 'AMAZON.FallbackIntent', confirmationStatus: 'NONE', slots: {} },
     }, state));
     expect(fallback.response.shouldEndSession).toBe(false);
+    expect(responseSpeech(fallback.response)).toBe('もう一回お願いします');
+    expect(responseSpeech({ outputSpeech: fallback.response.reprompt?.outputSpeech }))
+      .toBe('チャージ、ビーム、ファイアー、ブラックホール、ガードのどれかを言ってね。');
     expect(fallback.sessionAttributes).toMatchObject(state);
 
     const stop = await createSkill(skillId).invoke(envelope({
