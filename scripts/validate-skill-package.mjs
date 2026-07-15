@@ -13,7 +13,9 @@ const requiredIntents = [
   'ActionIntent', 'StartGameIntent', 'AMAZON.YesIntent', 'AMAZON.NoIntent',
   'AMAZON.HelpIntent', 'AMAZON.FallbackIntent', 'AMAZON.StopIntent', 'AMAZON.CancelIntent',
 ];
-const requiredStartGameSamples = ['しよう', '勝負', '勝負する', '遊ぶ', '対戦'];
+const requiredStartGameSamples = [
+  'しよう', '勝負', '勝負する', '遊ぶ', '対戦', '遊ぼう', '勝負しよう', '対戦しよう',
+];
 
 if (!manifest.manifest?.manifestVersion || !locale?.name || !locale?.summary || !locale?.description || locale.examplePhrases?.length !== 3) {
   throw new Error('skill.json is missing required ja-JP publishing metadata.');

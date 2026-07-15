@@ -37,7 +37,7 @@ Alexaは自分の行動を「チャージ」「ビーム」「ファイアー」
 ### インテント設計
 
 - `ActionIntent` + `ACTION_TYPE`スロット（チャージ・ビーム・ファイアー・ブラックホール・ガード）
-- `StartGameIntent`（「スタート」「始める」に加え、「しよう」「勝負」「遊ぶ」「対戦」などの自然なゲーム開始）
+- `StartGameIntent`（「スタート」「始める」に加え、「しよう」「勝負しよう」「遊ぼう」「対戦しよう」などの自然なゲーム開始）
 - `ReplayYesIntent` / `ReplayNoIntent` と `AMAZON.YesIntent` / `AMAZON.NoIntent`（ゲーム開始・再戦確認用）
 - `AMAZON.HelpIntent`
 - `AMAZON.FallbackIntent`
