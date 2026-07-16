@@ -97,6 +97,6 @@ async function validatePngIcon(uri, expectedWidth, expectedHeight) {
 await validatePngIcon(locale.smallIconUri, 108, 108);
 await validatePngIcon(locale.largeIconUri, 512, 512);
 
-if (/(?<!\n)\n(?!\n)/.test(locale.description.replace(/\r\n/g, '\n'))) {
-  throw new Error('skill.json description must not contain single newlines; use double newlines (\\n\\n) for paragraph breaks.');
+if (!locale.description.includes('\n\n')) {
+  throw new Error('skill.json description must include blank-line paragraph separators.');
 }
