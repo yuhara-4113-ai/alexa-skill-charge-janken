@@ -25,7 +25,10 @@ if (!manifest.manifest?.manifestVersion || !locale?.name || !locale?.summary || 
 if (!Array.isArray(locale.keywords) || locale.keywords.length === 0) {
   throw new Error('skill.json is missing ja-JP publishing keywords.');
 }
-if (!privacyAndCompliance?.locales?.['ja-JP']?.privacyPolicyUrl?.startsWith('https://')) {
+if (!privacyAndCompliance) {
+  throw new Error('skill.json is missing privacyAndCompliance metadata.');
+}
+if (!privacyAndCompliance.locales?.['ja-JP']?.privacyPolicyUrl?.startsWith('https://')) {
   throw new Error('skill.json must contain an HTTPS privacy policy URL.');
 }
 if (
@@ -66,7 +69,10 @@ if (intentSamples.some((sample) => /[^ ]\{[^{}]+\}|\{[^{}]+\}[^ ]/u.test(sample)
 }
 
 async function validatePngIcon(uri, expectedWidth, expectedHeight) {
-  if (!uri?.startsWith('file://')) {
+  if (!uri) {
+    throw new Error('Store icon URI is missing.');
+  }
+  if (!uri.startsWith('file://')) {
     throw new Error('Store icons must use skill-package-relative file:// URIs.');
   }
   const icon = await readFile(`${packageRoot}/${uri.slice('file://'.length)}`);
