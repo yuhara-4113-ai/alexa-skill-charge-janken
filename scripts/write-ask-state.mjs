@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
@@ -21,11 +21,24 @@ await writeFile(join(projectAskDirectory, 'ask-states.json'), `${JSON.stringify(
 
 const userAskDirectory = join(homedir(), '.ask');
 await mkdir(userAskDirectory, { recursive: true });
-await writeFile(join(userAskDirectory, 'cli_config'), `${JSON.stringify({
+const cliConfigPath = join(userAskDirectory, 'cli_config');
+let existingConfig = {};
+try {
+  existingConfig = JSON.parse(await readFile(cliConfigPath, 'utf8'));
+} catch (error) {
+  if (error.code !== 'ENOENT') {
+    throw error;
+  }
+}
+await writeFile(cliConfigPath, `${JSON.stringify({
+  ...existingConfig,
   profiles: {
+    ...existingConfig.profiles,
     default: {
+      ...existingConfig.profiles?.default,
       vendor_id: vendorId,
       token: {
+        ...existingConfig.profiles?.default?.token,
         access_token: '',
         refresh_token: refreshToken,
         token_type: 'bearer',
