@@ -33,7 +33,7 @@ if (
   || publishingInformation?.distributionMode !== 'PUBLIC'
   || publishingInformation?.category !== 'GAMES'
   || publishingInformation?.distributionCountries?.length !== 1
-  || publishingInformation.distributionCountries[0] !== 'JP'
+  || publishingInformation?.distributionCountries?.[0] !== 'JP'
   || !publishingInformation?.testingInstructions
 ) {
   throw new Error('skill.json has invalid Store distribution metadata.');
