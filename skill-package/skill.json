@@ -42,7 +42,7 @@
       "containsAds": false,
       "locales": {
         "ja-JP": {
-          "privacyPolicyUrl": "https://raw.githubusercontent.com/yuhara-4113-ai/alexa-skill-charge-janken/main/docs/privacy-policy.md"
+          "privacyPolicyUrl": "https://yuhara-4113-ai.github.io/alexa-skill-charge-janken/privacy-policy.html"
         }
       }
     },

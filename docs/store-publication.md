@@ -39,7 +39,7 @@ Store掲載文では「ビーム」「ガード」など実際の音声案内と
 - 日本で16歳未満を主対象とする内容へ変更する場合は、`isChildDirected`、カテゴリ、掲載文、子供向けスキルの追加要件をまとめて再検討する
 - ライブラリや配布内容を変更した場合は、輸出コンプライアンスを再確認する
 
-プライバシーポリシーは[`docs/privacy-policy.md`](privacy-policy.md)を正本とし、manifestにはログイン不要で本文を直接取得できる`raw.githubusercontent.com`の公開URLを設定します。運営者名と問い合わせ先を変更する場合は、認定申請前に文書と公開URLを更新します。
+プライバシーポリシーは[`docs/privacy-policy.md`](privacy-policy.md)を正本とし、GitHub Pagesでログイン不要のHTMLとして公開します。manifestには`https://yuhara-4113-ai.github.io/alexa-skill-charge-janken/privacy-policy.html`を設定します。運営者名と問い合わせ先を変更する場合は、認定申請前に文書と公開ページを更新します。
 
 ## 認定テスト
 
