@@ -70,6 +70,9 @@ async function validatePngIcon(uri, expectedWidth, expectedHeight) {
     throw new Error('Store icons must use skill-package-relative file:// URIs.');
   }
   const icon = await readFile(`${packageRoot}/${uri.slice('file://'.length)}`);
+  if (icon.length < 24) {
+    throw new Error(`${uri} is too small to be a valid PNG file.`);
+  }
   const pngSignature = '89504e470d0a1a0a';
   if (icon.subarray(0, 8).toString('hex') !== pngSignature) {
     throw new Error(`${uri} is not a PNG file.`);
