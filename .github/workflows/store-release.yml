@@ -1,0 +1,87 @@
+name: Store release
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Certificationへ提出するか、認定済み版を公開するか
+        required: true
+        type: choice
+        options:
+          - submit-certification
+          - publish-certified
+      confirmation:
+        description: 提出はSUBMIT、公開はPUBLISHと入力
+        required: true
+        type: string
+      publishes_at:
+        description: 公開日時（任意、ISO 8601 UTC。空なら即時公開）
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: charge-janken-store-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    environment: development
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version-file: .nvmrc
+      - name: Validate deployment identity
+        env:
+          ALEXA_SKILL_ID: ${{ vars.ALEXA_SKILL_ID }}
+        run: node scripts/validate-deployment.mjs
+      - name: Install ASK CLI
+        run: npm install --global ask-cli@2.30.7
+      - name: Configure ASK CLI
+        env:
+          ALEXA_SKILL_ID: ${{ vars.ALEXA_SKILL_ID }}
+          ASK_VENDOR_ID: ${{ vars.ASK_VENDOR_ID }}
+          ASK_REFRESH_TOKEN: ${{ secrets.ASK_REFRESH_TOKEN }}
+        run: node scripts/write-ask-state.mjs "$ALEXA_SKILL_ID"
+      - name: Submit development version for certification
+        if: inputs.operation == 'submit-certification'
+        env:
+          ALEXA_SKILL_ID: ${{ vars.ALEXA_SKILL_ID }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          VERSION_MESSAGE: ${{ format('Store release from {0}', github.sha) }}
+        run: |
+          test "$CONFIRMATION" = "SUBMIT"
+          validation="$(ask smapi get-skill-validations \
+            --skill-id "$ALEXA_SKILL_ID" \
+            --stage development \
+            --validation-id '~mostRecent' \
+            --accept-language ja-JP)"
+          echo "$validation" | jq
+          test "$(echo "$validation" | jq -r '.status')" = "SUCCESSFUL"
+          ask smapi submit-skill-for-certification \
+            --skill-id "$ALEXA_SKILL_ID" \
+            --publication-method MANUAL_PUBLISHING \
+            --version-message "$VERSION_MESSAGE"
+      - name: Publish certified version
+        if: inputs.operation == 'publish-certified'
+        env:
+          ALEXA_SKILL_ID: ${{ vars.ALEXA_SKILL_ID }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          PUBLISHES_AT: ${{ inputs.publishes_at }}
+        run: |
+          test "$CONFIRMATION" = "PUBLISH"
+          if [ -n "$PUBLISHES_AT" ]; then
+            ask smapi publish-skill \
+              --skill-id "$ALEXA_SKILL_ID" \
+              --accept-language ja-JP \
+              --publishes-at-date "$PUBLISHES_AT"
+          else
+            ask smapi publish-skill \
+              --skill-id "$ALEXA_SKILL_ID" \
+              --accept-language ja-JP
+          fi

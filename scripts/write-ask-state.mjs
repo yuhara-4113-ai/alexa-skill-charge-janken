@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
@@ -13,16 +13,32 @@ if (!refreshToken || !vendorId) {
   throw new Error('ASK_REFRESH_TOKEN and ASK_VENDOR_ID are required only for ASK CLI configuration.');
 }
 
-const askDirectory = join(homedir(), '.ask');
-await mkdir(askDirectory, { recursive: true });
-await writeFile(join(askDirectory, 'ask-states.json'), `${JSON.stringify({
+const projectAskDirectory = join(process.cwd(), '.ask');
+await mkdir(projectAskDirectory, { recursive: true });
+await writeFile(join(projectAskDirectory, 'ask-states.json'), `${JSON.stringify({
   profiles: { default: { skillId } },
 }, null, 2)}\n`);
-await writeFile(join(askDirectory, 'cli_config'), `${JSON.stringify({
+
+const userAskDirectory = join(homedir(), '.ask');
+await mkdir(userAskDirectory, { recursive: true });
+const cliConfigPath = join(userAskDirectory, 'cli_config');
+let existingConfig = {};
+try {
+  existingConfig = JSON.parse(await readFile(cliConfigPath, 'utf8'));
+} catch (error) {
+  if (error.code !== 'ENOENT') {
+    throw error;
+  }
+}
+await writeFile(cliConfigPath, `${JSON.stringify({
+  ...existingConfig,
   profiles: {
+    ...existingConfig.profiles,
     default: {
+      ...existingConfig.profiles?.default,
       vendor_id: vendorId,
       token: {
+        ...existingConfig.profiles?.default?.token,
         access_token: '',
         refresh_token: refreshToken,
         token_type: 'bearer',

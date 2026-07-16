@@ -105,7 +105,7 @@ jobs:
           node scripts/validate-skill-package.mjs .build/skill-package
       - name: Install ASK CLI
         run: npm install --global ask-cli@2.30.7
-      - name: Update skill manifest and interaction model
+      - name: Update development skill package
         env:
           ALEXA_SKILL_ID: ${{ vars.ALEXA_SKILL_ID }}
           ASK_VENDOR_ID: ${{ vars.ASK_VENDOR_ID }}
@@ -129,15 +129,36 @@ jobs:
             return 1
           }
 
-          ask smapi update-skill-manifest \
-            --skill-id "$ALEXA_SKILL_ID" \
-            --stage development \
-            --manifest "$(cat .build/skill-package/skill.json)"
+          ask deploy --target skill-metadata --ignore-hash
           wait_for_resource manifest
-
-          ask smapi set-interaction-model \
+          wait_for_resource interactionModel
+      - name: Validate development skill for certification
+        env:
+          ALEXA_SKILL_ID: ${{ vars.ALEXA_SKILL_ID }}
+        run: |
+          ask smapi submit-skill-validation \
             --skill-id "$ALEXA_SKILL_ID" \
             --stage development \
-            --locale ja-JP \
-            --interaction-model "$(cat .build/skill-package/interactionModels/custom/ja-JP.json)"
-          wait_for_resource interactionModel
+            --locales ja-JP
+
+          for attempt in $(seq 1 36); do
+            if result="$(ask smapi get-skill-validations \
+              --skill-id "$ALEXA_SKILL_ID" \
+              --stage development \
+              --validation-id '~mostRecent' \
+              --accept-language ja-JP 2>&1)"; then
+              status="$(echo "$result" | jq -r '.status // empty')"
+              if [ "$status" = "SUCCESSFUL" ]; then
+                echo "$result" | jq
+                exit 0
+              fi
+              if [ "$status" = "FAILED" ]; then
+                echo "$result" | jq
+                exit 1
+              fi
+            fi
+            sleep 5
+          done
+
+          echo "Timed out waiting for skill validation."
+          exit 1
