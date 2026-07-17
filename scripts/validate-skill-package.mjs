@@ -85,10 +85,18 @@ async function validatePngIcon(uri, expectedWidth, expectedHeight) {
   }
   const width = icon.readUInt32BE(16);
   const height = icon.readUInt32BE(20);
+  const colorType = icon[25];
   if (width !== expectedWidth || height !== expectedHeight) {
     throw new Error(`${uri} must be ${expectedWidth} x ${expectedHeight}px, but is ${width} x ${height}px.`);
+  }
+  if (colorType !== 4 && colorType !== 6) {
+    throw new Error(`${uri} must use a PNG color type with an alpha channel.`);
   }
 }
 
 await validatePngIcon(locale.smallIconUri, 108, 108);
 await validatePngIcon(locale.largeIconUri, 512, 512);
+
+if (!locale.description.includes('\n\n')) {
+  throw new Error('skill.json description must include blank-line paragraph separators.');
+}
